@@ -1,5 +1,5 @@
 use std::net::SocketAddr;
-use axum::{routing::{put, post}, http::StatusCode, Json, Router, Form, response::Response, extract::FromRequest};
+use axum::{routing::{get, put, post}, http::StatusCode, Json, Router, Form};
 use serde::{Deserialize, Serialize};
 use clap::Parser;
 use teloxide::prelude::*;
@@ -30,8 +30,9 @@ async fn main() {
 	*CHAT_ID.write().await = ChatId(args.target);
 
 	let app = Router::new()
-		.route("/suggestion", post(suggestion_form))
-		.route("/suggestion", put(suggestion_json));
+		.route("/send", get(suggestion_help))
+		.route("/send", post(suggestion_form))
+		.route("/send", put(suggestion_json));
 
 	let addr : SocketAddr = args.addr.parse().expect("invalid host provided");
 
@@ -41,6 +42,11 @@ async fn main() {
 		.serve(app.into_make_service())
 		.await
 		.unwrap();
+}
+
+async fn suggestion_help() -> (StatusCode, Json<Suggestion>) {
+	let body = "use this endpoint to send me direct messages. this is the accepted structure. on PUT send as json, on POST send as form-urlencoded".to_string();
+	(StatusCode::OK, Json(Suggestion { author: None, contact: None, body }))
 }
 
 async fn suggestion_json(Json(payload): Json<Suggestion>) -> (StatusCode, Json<Acknowledgement>) {
@@ -69,7 +75,7 @@ async fn suggestion_inner(payload: Suggestion) -> (StatusCode, Json<Acknowledgem
 	}
 }
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 struct Suggestion {
 	author: Option<String>,
 	contact: Option<String>,
