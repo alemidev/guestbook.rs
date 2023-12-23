@@ -47,8 +47,8 @@ async fn send_suggestion(payload: Insertion, state: SafeContext) -> impl IntoRes
 	let avatar = hasher.finalize();
 	let page = GuestBookPage {
 		avatar: format!("{:x}", avatar),
-		author: payload.author.map(|x| x[..25].to_string()), // TODO don't hardcode char limits!
-		contact: payload.contact.clone().map(|x| x[..50].to_string()),
+		author: payload.author.map(|x| x.chars().take(25).collect()), // TODO don't hardcode char limits!
+		contact: payload.contact.clone().map(|x| x.chars().take(50).collect()),
 		body: payload.body,
 		date: Utc::now(),
 		url: match payload.contact {
