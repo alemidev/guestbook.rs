@@ -7,9 +7,9 @@ use crate::{notifications::NotificationProcessor, model::{Suggestion, Acknowledg
 
 pub fn create_router_with_app_routes(state: Context) -> Router {
 	Router::new()
-		.route("/send", get(get_suggestion))
-		.route("/send", post(send_suggestion_form))
-		.route("/send", put(send_suggestion_json))
+		.route("/api", get(get_suggestion))
+		.route("/api", post(send_suggestion_form))
+		.route("/api", put(send_suggestion_json))
 		.with_state(Arc::new(RwLock::new(state)))
 }
 

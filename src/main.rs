@@ -19,13 +19,20 @@ struct CliArgs {
 	#[arg(long, short, default_value = "127.0.0.1:37812")]
 	/// host to bind onto
 	addr: String,
+
+	#[arg(long, default_value_t = false)]
+	/// increase log verbosity to DEBUG level
+	debug: bool,
 }
 
 #[tokio::main]
 async fn main() {
-	tracing_subscriber::fmt::init();
-
 	let args = CliArgs::parse();
+
+	tracing_subscriber::fmt::fmt()
+		.with_max_level(if args.debug { tracing::Level::DEBUG } else { tracing::Level::INFO })
+		.pretty()
+		.finish();
 
 	let addr : SocketAddr = args.addr.parse().expect("invalid host provided");
 
