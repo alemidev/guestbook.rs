@@ -18,6 +18,16 @@ pub struct Insertion {
 	pub body: String,
 }
 
+impl Insertion {
+	pub fn sanitize(self) -> Self {
+		Insertion {
+			author: self.author.map(|x| html_escape::encode_safe(&x).to_string()),
+			contact: self.contact.map(|x| html_escape::encode_safe(&x).to_string()),
+			body: html_escape::encode_safe(&self.body).to_string(),
+		}
+	}
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Acknowledgement {
 	Sent(String),

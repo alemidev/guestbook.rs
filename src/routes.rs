@@ -40,7 +40,8 @@ impl Context {
 	}
 }
 
-async fn send_suggestion(payload: Insertion, state: SafeContext) -> Result<Redirect, String> {
+async fn send_suggestion(unsafe_payload: Insertion, state: SafeContext) -> Result<Redirect, String> {
+	let payload = unsafe_payload.sanitize();
 	let mut hasher = Md5::new();
 	let id = payload.contact.clone().unwrap_or(Uuid::new_v4().to_string());
 	hasher.update(id.as_bytes());
