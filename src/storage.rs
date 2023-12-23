@@ -1,4 +1,4 @@
-use crate::model::Suggestion;
+use crate::model::GuestBookPage;
 
 
 #[derive(Debug, thiserror::Error)]
@@ -30,19 +30,19 @@ impl JsonFileStorageStrategy {
 
 
 #[async_trait::async_trait]
-impl StorageStrategy<Suggestion> for JsonFileStorageStrategy {
-	async fn archive(&mut self, payload: Suggestion) -> Result<(), StorageStrategyError> {
+impl StorageStrategy<GuestBookPage> for JsonFileStorageStrategy {
+	async fn archive(&mut self, payload: GuestBookPage) -> Result<(), StorageStrategyError> {
 		let file_content = std::fs::read_to_string(&self.path)?;
-		let mut current_content : Vec<Suggestion> = serde_json::from_str(&file_content)?;
+		let mut current_content : Vec<GuestBookPage> = serde_json::from_str(&file_content)?;
 		current_content.push(payload);
 		let updated_content = serde_json::to_string(&current_content)?;
 		std::fs::write(&self.path, updated_content)?;
 		Ok(())
 	}
 
-	async fn extract(&self, offset: usize, window: usize) -> Result<Vec<Suggestion>, StorageStrategyError> {
+	async fn extract(&self, offset: usize, window: usize) -> Result<Vec<GuestBookPage>, StorageStrategyError> {
 		let file_content = std::fs::read_to_string(&self.path)?;
-		let current_content : Vec<Suggestion> = serde_json::from_str(&file_content)?;
+		let current_content : Vec<GuestBookPage> = serde_json::from_str(&file_content)?;
 		let mut out = Vec::new();
 		for sugg in current_content.iter().rev().skip(offset) {
 			out.push(sugg.clone());
