@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
-use axum::{http::StatusCode, Json, Form, Router, routing::{put, post, get}, extract::{State, Query}, response::IntoResponse};
+use axum::{Json, Form, Router, routing::{put, post, get}, extract::{State, Query}, response::Redirect};
 use chrono::Utc;
 use md5::{Md5, Digest};
 use tokio::sync::RwLock;
 use uuid::Uuid;
 
-use crate::{notifications::NotificationProcessor, model::{GuestBookPage, Acknowledgement, PageOptions, Insertion}, storage::StorageStrategy};
+use crate::{notifications::NotificationProcessor, model::{GuestBookPage, PageOptions, Insertion}, storage::StorageStrategy};
 
 pub fn create_router_with_app_routes(state: Context) -> Router {
 	Router::new()
@@ -40,7 +40,7 @@ impl Context {
 	}
 }
 
-async fn send_suggestion(payload: Insertion, state: SafeContext) -> impl IntoResponse {
+async fn send_suggestion(payload: Insertion, state: SafeContext) -> Result<Redirect, String> {
 	let mut hasher = Md5::new();
 	let id = payload.contact.clone().unwrap_or(Uuid::new_v4().to_string());
 	hasher.update(id.as_bytes());
@@ -65,13 +65,13 @@ async fn send_suggestion(payload: Insertion, state: SafeContext) -> impl IntoRes
 	let mut lock = state.write().await;
 	lock.process(&page).await;
 	match lock.storage.archive(page).await {
-		Ok(()) => (StatusCode::OK, Json(Acknowledgement::Sent("".into()))),
-		Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(Acknowledgement::Refused(e.to_string()))),
+		Ok(()) => Ok(Redirect::to("/")),
+		Err(e) => Err(e.to_string()),
 	}
 }
 
-async fn send_suggestion_json(State(state): State<SafeContext>, Json(payload): Json<Insertion>) -> impl IntoResponse { send_suggestion(payload, state).await }
-async fn send_suggestion_form(State(state): State<SafeContext>, Form(payload): Form<Insertion>) -> impl IntoResponse { send_suggestion(payload, state).await }
+async fn send_suggestion_json(State(state): State<SafeContext>, Json(payload): Json<Insertion>) -> Result<Redirect, String> { send_suggestion(payload, state).await }
+async fn send_suggestion_form(State(state): State<SafeContext>, Form(payload): Form<Insertion>) -> Result<Redirect, String> { send_suggestion(payload, state).await }
 
 
 async fn get_suggestion(State(state): State<SafeContext>, Query(page): Query<PageOptions>) -> Result<Json<Vec<GuestBookPage>>, String> {
