@@ -3,18 +3,22 @@ use chrono::{DateTime, Utc};
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct GuestBookPage {
-	pub author: Option<String>,
-	pub contact: Option<String>,
+	pub author: String,
 	pub body: String,
 	pub date: DateTime<Utc>,
 	pub avatar: String,
 	pub url: Option<String>,
+	pub contact: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Insertion {
+	#[serde(deserialize_with = "non_empty_str")]
 	pub author: Option<String>,
+
+	#[serde(deserialize_with = "non_empty_str")]
 	pub contact: Option<String>,
+
 	pub body: String,
 }
 
@@ -40,3 +44,9 @@ pub struct PageOptions {
 	pub limit: Option<usize>,
 }
 
+
+
+
+fn non_empty_str<'de, D: serde::Deserializer<'de>>(d: D) -> Result<Option<String>, D::Error> {
+	Ok(Option::deserialize(d)?.filter(|s: &String| !s.is_empty()))
+}

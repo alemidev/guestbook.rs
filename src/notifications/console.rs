@@ -17,6 +17,6 @@ pub struct ConsolePrettyNotifier {}
 #[async_trait::async_trait]
 impl NotificationProcessor<GuestBookPage> for ConsolePrettyNotifier {
 	async fn process(&self, suggestion: &GuestBookPage) {
-		println!("{} -- {} <{}>", suggestion.body, suggestion.author.as_deref().unwrap_or("anon"), suggestion.contact.as_deref().unwrap_or("")); 
+		println!("{} -- {} <{}>", suggestion.body, suggestion.author, suggestion.contact.as_deref().unwrap_or("")); 
 	}
 }
