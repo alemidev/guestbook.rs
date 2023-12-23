@@ -1,7 +1,10 @@
 use std::sync::Arc;
 
 use axum::{http::StatusCode, Json, Form, Router, routing::{put, post, get}, extract::{State, Query}, response::IntoResponse};
+use chrono::Utc;
+use md5::{Md5, Digest};
 use tokio::sync::RwLock;
+use uuid::Uuid;
 
 use crate::{notifications::NotificationProcessor, model::{GuestBookPage, Acknowledgement, PageOptions, Insertion}, storage::StorageStrategy};
 
@@ -37,7 +40,28 @@ impl Context {
 	}
 }
 
-async fn send_suggestion(payload: Suggestion, state: SafeContext) -> impl IntoResponse {
+async fn send_suggestion(payload: Insertion, state: SafeContext) -> impl IntoResponse {
+	let mut hasher = Md5::new();
+	let id = payload.contact.clone().unwrap_or(Uuid::new_v4().to_string());
+	hasher.update(id.as_bytes());
+	let avatar = hasher.finalize();
+	let page = GuestBookPage {
+		avatar: format!("{:x}", avatar),
+		author: payload.author.map(|x| x[..25].to_string()), // TODO don't hardcode char limits!
+		contact: payload.contact.clone().map(|x| x[..50].to_string()),
+		body: payload.body,
+		date: Utc::now(),
+		url: match payload.contact {
+			None => None,
+			Some(c) => if c.starts_with("http") {
+				Some(c)
+			} else if c.contains('@') {
+				Some(format!("mailto:{}", c))
+			} else {
+				None
+			}
+		},
+	};
 	let mut lock = state.write().await;
 	lock.process(&page).await;
 	match lock.storage.archive(page).await {

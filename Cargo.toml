@@ -16,9 +16,12 @@ serde_json = "1.0.107"
 tokio = { version = "1.33.0", features = ["macros", "rt-multi-thread"] }
 tracing = "0.1.39"
 tracing-subscriber = "0.3.17"
+thiserror = "1.0.51"
+chrono = { version = "0.4.31", features = ["serde"] }
+uuid = { version = "1.6.1", features = ["v4", "fast-rng"] }
+md-5 = "0.10.6"
 # telegram provider
 teloxide = { version = "0.12.2", features = ["macros"], optional = true }
-thiserror = "1.0.51"
 
 [features]
 default = []
