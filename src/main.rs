@@ -1,5 +1,5 @@
 use std::net::SocketAddr;
-use clap::Parser;
+use clap::{Parser, Subcommand};
 
 use crate::{storage::JsonFileStorageStrategy, routes::Context, notifications::console::ConsoleTracingNotifier};
 
@@ -11,18 +11,38 @@ mod storage;
 
 
 #[derive(Debug, Clone, Parser)]
+#[command(author, version, about)]
 /// api for sending anonymous telegram messages to a specific user
 struct CliArgs {
-	// chat id of target user
-	//target: i64,
-
-	#[arg(long, short, default_value = "127.0.0.1:37812")]
-	/// host to bind onto
-	addr: String,
+	/// action to execute
+	#[clap(subcommand)]
+	action: CliAction,
 
 	#[arg(long, default_value_t = false)]
 	/// increase log verbosity to DEBUG level
 	debug: bool,
+}
+
+#[derive(Debug, Clone, Subcommand)]
+enum CliAction {
+	Serve {
+		#[arg(long, short, default_value = "127.0.0.1:37812")]
+		/// host to bind onto
+		addr: String,
+
+		#[arg(long)]
+		/// force public field content
+		public: Option<bool>,
+
+		#[arg(long)]
+		/// force author field content
+		author: Option<String>,
+	}
+}
+
+struct CliServeOverrides {
+	author: Option<String>,
+	public: Option<bool>,
 }
 
 #[tokio::main]
@@ -34,19 +54,23 @@ async fn main() {
 		.pretty()
 		.finish();
 
-	let addr : SocketAddr = args.addr.parse().expect("invalid host provided");
+	match args.action {
+		CliAction::Serve { addr, public, author } => {
+			let addr : SocketAddr = addr.parse().expect("invalid host provided");
 
-	let storage = Box::new(JsonFileStorageStrategy::new("./storage.json"));
+			let storage = Box::new(JsonFileStorageStrategy::new("./storage.json"));
 
-	let state = Context::new(storage)
-		.register(Box::new(ConsoleTracingNotifier {}));
+			let state = Context::new(storage)
+				.register(Box::new(ConsoleTracingNotifier {}));
 
-	let router = routes::create_router_with_app_routes(state);
+			let router = routes::create_router_with_app_routes(state);
 
-	tracing::info!("listening on {}", addr);
+			tracing::info!("listening on {}", addr);
 
-	axum::Server::bind(&addr)
-		.serve(router.into_make_service())
-		.await
-		.unwrap();
+			axum::Server::bind(&addr)
+				.serve(router.into_make_service())
+				.await
+				.unwrap();
+		}
+	}
 }

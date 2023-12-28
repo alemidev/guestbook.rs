@@ -1,4 +1,4 @@
-use crate::model::GuestBookPage;
+use crate::model::Page;
 
 use super::NotificationProcessor;
 
@@ -6,8 +6,8 @@ use super::NotificationProcessor;
 pub struct ConsoleTracingNotifier {}
 
 #[async_trait::async_trait]
-impl NotificationProcessor<GuestBookPage> for ConsoleTracingNotifier {
-	async fn process(&self, suggestion: &GuestBookPage) {
+impl NotificationProcessor<Page> for ConsoleTracingNotifier {
+	async fn process(&self, suggestion: &Page) {
 		tracing::info!(" >> {:?}", suggestion);
 	}
 }
@@ -15,8 +15,8 @@ impl NotificationProcessor<GuestBookPage> for ConsoleTracingNotifier {
 pub struct ConsolePrettyNotifier {}
 
 #[async_trait::async_trait]
-impl NotificationProcessor<GuestBookPage> for ConsolePrettyNotifier {
-	async fn process(&self, suggestion: &GuestBookPage) {
+impl NotificationProcessor<Page> for ConsolePrettyNotifier {
+	async fn process(&self, suggestion: &Page) {
 		println!("{} -- {} <{}>", suggestion.body, suggestion.author, suggestion.contact.as_deref().unwrap_or("")); 
 	}
 }
