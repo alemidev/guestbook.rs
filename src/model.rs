@@ -35,10 +35,10 @@ impl From<Page> for PageView {
 		hasher.update(page.contact.as_deref().unwrap_or(&Uuid::new_v4().to_string()).as_bytes());
 		let avatar = format!("{:x}", hasher.finalize());
 
-		let url = match page.contact {
+		let url = match page.contact.as_deref() {
 			None => None,
 			Some(c) => if c.starts_with("http") {
-				Some(c)
+				Some(c.to_string())
 			} else if c.contains('@') {
 				Some(format!("mailto:{}", c))
 			} else if c.contains('.') {
@@ -74,12 +74,12 @@ pub struct PageInsertion {
 
 impl PageInsertion {
 	pub fn sanitize(&mut self) {
-		self.author = self.author.map(|x| html_escape::encode_safe(&x.chars().take(AUTHOR_MAX_CHARS).collect::<String>()).to_string());
-		self.contact = self.contact.map(|x| html_escape::encode_safe(&x.chars().take(CONTACT_MAX_CHARS).collect::<String>()).to_string());
+		self.author = self.author.as_mut().map(|x| html_escape::encode_safe(&x.chars().take(AUTHOR_MAX_CHARS).collect::<String>()).to_string());
+		self.contact = self.contact.as_mut().map(|x| html_escape::encode_safe(&x.chars().take(CONTACT_MAX_CHARS).collect::<String>()).to_string());
 		self.body = html_escape::encode_safe(&self.body.chars().take(BODY_MAX_CHARS).collect::<String>()).to_string();
 	}
 
-	pub fn convert(mut self, overrides: crate::CliServeOverrides) -> Page {
+	pub fn convert(mut self, overrides: &crate::CliServeOverrides) -> Page {
 		self.sanitize();
 
 		let mut page = Page {
@@ -90,8 +90,8 @@ impl PageInsertion {
 			public: true,
 		};
 
-		if let Some(author) = overrides.author {
-			page.author = author;
+		if let Some(author) = &overrides.author {
+			page.author = author.to_string();
 		}
 		if let Some(public) = overrides.public {
 			page.public = public;

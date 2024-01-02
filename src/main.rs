@@ -60,8 +60,11 @@ async fn main() {
 
 			let storage = Box::new(JsonFileStorageStrategy::new("./storage.json"));
 
-			let state = Context::new(storage)
-				.register(Box::new(ConsoleTracingNotifier {}));
+			let overrides = CliServeOverrides { author, public };
+
+			let mut state = Context::new(storage, overrides);
+
+			state.register(Box::new(ConsoleTracingNotifier {}));
 
 			let router = routes::create_router_with_app_routes(state);
 

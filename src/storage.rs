@@ -13,7 +13,7 @@ pub enum StorageStrategyError {
 
 #[async_trait::async_trait]
 pub trait StorageStrategy<T> : Send + Sync {
-	async fn archive(&mut self, payload: T) -> Result<(), StorageStrategyError>;
+	async fn archive(&self, payload: T) -> Result<(), StorageStrategyError>;
 	async fn extract(&self, offset: usize, window: usize) -> Result<Vec<T>, StorageStrategyError>;
 }
 
@@ -33,19 +33,19 @@ impl JsonFileStorageStrategy {
 
 #[async_trait::async_trait]
 impl StorageStrategy<Page> for JsonFileStorageStrategy {
-	async fn archive(&mut self, payload: Page) -> Result<(), StorageStrategyError> {
+	async fn archive(&self, payload: Page) -> Result<(), StorageStrategyError> {
 		let path = self.path.write().await;
-		let file_content = std::fs::read_to_string(*path)?;
+		let file_content = std::fs::read_to_string(&*path)?;
 		let mut current_content : Vec<Page> = serde_json::from_str(&file_content)?;
 		current_content.push(payload);
 		let updated_content = serde_json::to_string(&current_content)?;
-		std::fs::write(*path, updated_content)?;
+		std::fs::write(&*path, updated_content)?;
 		Ok(())
 	}
 
 	async fn extract(&self, offset: usize, window: usize) -> Result<Vec<Page>, StorageStrategyError> {
 		let path = self.path.read().await;
-		let file_content = std::fs::read_to_string(*path)?;
+		let file_content = std::fs::read_to_string(&*path)?;
 		let current_content : Vec<Page> = serde_json::from_str(&file_content)?;
 		let mut out = Vec::new();
 		for sugg in current_content.iter().rev().skip(offset) {
