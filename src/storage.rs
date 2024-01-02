@@ -1,3 +1,5 @@
+use tokio::sync::RwLock;
+
 use crate::model::Page;
 
 
@@ -19,12 +21,12 @@ pub trait StorageStrategy<T> : Send + Sync {
 /// this strategy is rather inefficient since it has to iterate the whole file every time, but it
 /// requires literally zero effort
 pub struct JsonFileStorageStrategy {
-	path: String,
+	path: RwLock<String>, // only needed to prevent race conditions on insertion
 }
 
 impl JsonFileStorageStrategy {
 	pub fn new(path: &str) -> Self {
-		JsonFileStorageStrategy { path: path.to_string() }
+		JsonFileStorageStrategy { path: RwLock::new(path.to_string()) }
 	}
 }
 
@@ -32,16 +34,18 @@ impl JsonFileStorageStrategy {
 #[async_trait::async_trait]
 impl StorageStrategy<Page> for JsonFileStorageStrategy {
 	async fn archive(&mut self, payload: Page) -> Result<(), StorageStrategyError> {
-		let file_content = std::fs::read_to_string(&self.path)?;
+		let path = self.path.write().await;
+		let file_content = std::fs::read_to_string(*path)?;
 		let mut current_content : Vec<Page> = serde_json::from_str(&file_content)?;
 		current_content.push(payload);
 		let updated_content = serde_json::to_string(&current_content)?;
-		std::fs::write(&self.path, updated_content)?;
+		std::fs::write(*path, updated_content)?;
 		Ok(())
 	}
 
 	async fn extract(&self, offset: usize, window: usize) -> Result<Vec<Page>, StorageStrategyError> {
-		let file_content = std::fs::read_to_string(&self.path)?;
+		let path = self.path.read().await;
+		let file_content = std::fs::read_to_string(*path)?;
 		let current_content : Vec<Page> = serde_json::from_str(&file_content)?;
 		let mut out = Vec::new();
 		for sugg in current_content.iter().rev().skip(offset) {
