@@ -4,7 +4,7 @@
 pub struct Config {
 	pub overrides: ConfigOverrides,
 
-	pub notifiers: Vec<ConfigNotifier>,
+	pub notifiers: ConfigNotifiers,
 }
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
@@ -16,8 +16,13 @@ pub struct ConfigOverrides {
 	pub date: Option<String>,
 }
 
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
+pub struct ConfigNotifiers {
+	pub providers: Vec<ConfigNotifierProvider>,
+}
+
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub enum ConfigNotifier {
+pub enum ConfigNotifierProvider {
 	ConsoleNotifier,
 
 	#[cfg(feature = "telegram")]

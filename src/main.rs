@@ -1,7 +1,7 @@
 use std::net::SocketAddr;
 use clap::{Parser, Subcommand};
 
-use crate::{storage::JsonFileStorageStrategy, routes::Context, notifications::console::ConsoleTracingNotifier, config::{Config, ConfigNotifier}};
+use crate::{storage::JsonFileStorageStrategy, routes::Context, notifications::console::ConsoleTracingNotifier, config::{Config, ConfigNotifierProvider}};
 
 mod notifications;
 
@@ -59,9 +59,9 @@ async fn main() {
 	match args.action {
 		CliAction::Default => {
 			let mut cfg = Config::default();
-			cfg.notifiers.push(ConfigNotifier::ConsoleNotifier);
+			cfg.notifiers.providers.push(ConfigNotifierProvider::ConsoleNotifier);
 			#[cfg(feature = "telegram")]
-			cfg.notifiers.push(ConfigNotifier::TelegramNotifier { token: "asd".into(), chat_id: -1 });
+			cfg.notifiers.providers.push(ConfigNotifierProvider::TelegramNotifier { token: "asd".into(), chat_id: -1 });
 			println!("{}", toml::to_string(&cfg).unwrap());
 		},
 		CliAction::Serve { addr, config } => {
@@ -77,14 +77,14 @@ async fn main() {
 
 			let mut state = Context::new(storage, config.overrides);
 
-			for notifier in config.notifiers {
+			for notifier in config.notifiers.providers {
 				match notifier {
-					ConfigNotifier::ConsoleNotifier => {
+					ConfigNotifierProvider::ConsoleNotifier => {
 						state.register(Box::new(ConsoleTracingNotifier {}));
 					},
 
 					#[cfg(feature = "telegram")]
-					ConfigNotifier::TelegramNotifier { token, chat_id } => {
+					ConfigNotifierProvider::TelegramNotifier { token, chat_id } => {
 						state.register(Box::new(
 							notifications::telegram::TGNotifier::new(&token, chat_id)
 						));
