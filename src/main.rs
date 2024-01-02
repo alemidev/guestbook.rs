@@ -1,13 +1,14 @@
 use std::net::SocketAddr;
 use clap::{Parser, Subcommand};
 
-use crate::{storage::JsonFileStorageStrategy, routes::Context, notifications::console::ConsoleTracingNotifier};
+use crate::{storage::JsonFileStorageStrategy, routes::Context, notifications::console::ConsoleTracingNotifier, config::{Config, ConfigNotifier}};
 
 mod notifications;
 
 mod routes;
 mod model;
 mod storage;
+mod config;
 
 
 #[derive(Debug, Clone, Parser)]
@@ -18,6 +19,10 @@ struct CliArgs {
 	#[clap(subcommand)]
 	action: CliAction,
 
+	/// connection string of storage database
+	#[arg(long, default_value = "./storage.json")] // file://./guestbook.db
+	db: String,
+
 	#[arg(long, default_value_t = false)]
 	/// increase log verbosity to DEBUG level
 	debug: bool,
@@ -25,24 +30,19 @@ struct CliArgs {
 
 #[derive(Debug, Clone, Subcommand)]
 enum CliAction {
+	/// serve guestbook api
 	Serve {
-		#[arg(long, short, default_value = "127.0.0.1:37812")]
+		#[arg(default_value = "127.0.0.1:37812")]
 		/// host to bind onto
 		addr: String,
 
-		#[arg(long)]
-		/// force public field content
-		public: Option<bool>,
+		#[arg(long, short)]
+		/// path to config file for overrides and notifiers
+		config: Option<String>,
+	},
 
-		#[arg(long)]
-		/// force author field content
-		author: Option<String>,
-	}
-}
-
-struct CliServeOverrides {
-	author: Option<String>,
-	public: Option<bool>,
+	/// print a sample configuration, redirect to file and customize
+	Default,
 }
 
 #[tokio::main]
@@ -51,20 +51,46 @@ async fn main() {
 
 	tracing_subscriber::fmt::fmt()
 		.with_max_level(if args.debug { tracing::Level::DEBUG } else { tracing::Level::INFO })
-		.pretty()
-		.finish();
+		.init();
+
+	// TODO more (and better) storage solutions! sqlx to the rescue...
+	let storage = Box::new(JsonFileStorageStrategy::new(&args.db));
 
 	match args.action {
-		CliAction::Serve { addr, public, author } => {
+		CliAction::Default => {
+			let mut cfg = Config::default();
+			cfg.notifiers.push(ConfigNotifier::ConsoleNotifier);
+			#[cfg(feature = "telegram")]
+			cfg.notifiers.push(ConfigNotifier::TelegramNotifier { token: "asd".into(), chat_id: -1 });
+			println!("{}", toml::to_string(&cfg).unwrap());
+		},
+		CliAction::Serve { addr, config } => {
 			let addr : SocketAddr = addr.parse().expect("invalid host provided");
 
-			let storage = Box::new(JsonFileStorageStrategy::new("./storage.json"));
+			let config = match config {
+				None => Config::default(),
+				Some(path) => {
+					let cfg_file = std::fs::read_to_string(path).unwrap();
+					toml::from_str(&cfg_file).unwrap()
+				}
+			};
 
-			let overrides = CliServeOverrides { author, public };
+			let mut state = Context::new(storage, config.overrides);
 
-			let mut state = Context::new(storage, overrides);
+			for notifier in config.notifiers {
+				match notifier {
+					ConfigNotifier::ConsoleNotifier => {
+						state.register(Box::new(ConsoleTracingNotifier {}));
+					},
 
-			state.register(Box::new(ConsoleTracingNotifier {}));
+					#[cfg(feature = "telegram")]
+					ConfigNotifier::TelegramNotifier { token, chat_id } => {
+						state.register(Box::new(
+							notifications::telegram::TGNotifier::new(&token, chat_id)
+						));
+					},
+				}
+			}
 
 			let router = routes::create_router_with_app_routes(state);
 

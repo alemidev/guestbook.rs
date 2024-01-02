@@ -3,6 +3,8 @@ use serde::{Serialize, Deserialize};
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
+use crate::config::ConfigOverrides;
+
 const AUTHOR_MAX_CHARS: usize = 25;
 const CONTACT_MAX_CHARS: usize = 50;
 const BODY_MAX_CHARS: usize = 4096;
@@ -70,6 +72,10 @@ pub struct PageInsertion {
 	pub contact: Option<String>,
 
 	pub body: String,
+
+	pub public: Option<bool>,
+
+	pub date: Option<DateTime<Utc>>,
 }
 
 impl PageInsertion {
@@ -79,15 +85,15 @@ impl PageInsertion {
 		self.body = html_escape::encode_safe(&self.body.chars().take(BODY_MAX_CHARS).collect::<String>()).to_string();
 	}
 
-	pub fn convert(mut self, overrides: &crate::CliServeOverrides) -> Page {
+	pub fn convert(mut self, overrides: &ConfigOverrides) -> Page {
 		self.sanitize();
 
 		let mut page = Page {
 			author: self.author.unwrap_or("".into()),
 			contact: self.contact,
 			body: self.body,
-			date: Utc::now(),
-			public: true,
+			date: self.date.unwrap_or(Utc::now()),
+			public: self.public.unwrap_or(true),
 		};
 
 		if let Some(author) = &overrides.author {
@@ -95,6 +101,13 @@ impl PageInsertion {
 		}
 		if let Some(public) = overrides.public {
 			page.public = public;
+		}
+		if let Some(date) = &overrides.date {
+			if date.to_lowercase() == "now" {
+				page.date = Utc::now();
+			} else {
+				page.date = DateTime::parse_from_rfc3339(date).unwrap().into();
+			}
 		}
 
 		page

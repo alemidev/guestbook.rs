@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use axum::{Json, Form, Router, routing::{put, post, get}, extract::{State, Query}, response::Redirect};
 
-use crate::{notifications::NotificationProcessor, model::{Page, PageOptions, PageInsertion}, storage::StorageStrategy, CliServeOverrides};
+use crate::{notifications::NotificationProcessor, model::{Page, PageOptions, PageInsertion}, storage::StorageStrategy, config::ConfigOverrides};
 
 pub fn create_router_with_app_routes(state: Context) -> Router {
 	Router::new()
@@ -15,11 +15,11 @@ pub fn create_router_with_app_routes(state: Context) -> Router {
 pub struct Context {
 	providers: Vec<Box<dyn NotificationProcessor<Page>>>,
 	storage: Box<dyn StorageStrategy<Page>>,
-	overrides: CliServeOverrides,
+	overrides: ConfigOverrides,
 }
 
 impl Context {
-	pub fn new(storage: Box<dyn StorageStrategy<Page>>, overrides: CliServeOverrides) -> Self {
+	pub fn new(storage: Box<dyn StorageStrategy<Page>>, overrides: ConfigOverrides) -> Self {
 		Context { providers: Vec::new(), storage, overrides }
 	}
 	

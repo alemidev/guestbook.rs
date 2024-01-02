@@ -22,6 +22,7 @@ uuid = { version = "1.6.1", features = ["v4", "fast-rng"] }
 md-5 = "0.10.6"
 # telegram provider
 teloxide = { version = "0.12.2", features = ["macros"], optional = true }
+toml = "0.8.8"
 
 [features]
 default = []
