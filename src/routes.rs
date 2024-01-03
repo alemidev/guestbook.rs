@@ -1,10 +1,11 @@
 use std::sync::Arc;
 
-use axum::{Json, Form, Router, routing::{put, post, get}, extract::{State, Query}, response::{Redirect, Html}};
+use axum::{Json, Form, Router, routing::{put, post, get}, extract::{State, Query}, response::Redirect};
 
 use crate::{notifications::NotificationProcessor, model::{Page, PageOptions, PageInsertion, PageView}, storage::StorageProvider, config::ConfigRouting};
 
 pub fn create_router_with_app_routes(state: Context) -> Router {
+	#[allow(unused_mut)]
 	let mut router = Router::new()
 		.route("/api", get(get_suggestion))
 		.route("/api", post(send_suggestion_form))
@@ -14,6 +15,7 @@ pub fn create_router_with_app_routes(state: Context) -> Router {
 	{
 		use sailfish::TemplateOnce;
 		use axum_extra::response::{Css, JavaScript};
+		use axum::response::Html;
 
 		let template = crate::web::IndexTemplate::from(&state.template)
 			.render_once()

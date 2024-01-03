@@ -27,6 +27,7 @@ pub struct StorageProvider {
 //    https://github.com/launchbadge/sqlx/issues/2778
 //   so the `public` field is an integer which is ridicolous
 
+#[cfg(any(feature = "sqlite", feature = "mysql"))]
 const SQLITE_SCHEMA : &str = "
 CREATE TABLE IF NOT EXISTS pages (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -36,8 +37,9 @@ CREATE TABLE IF NOT EXISTS pages (
 	timestamp INTEGER NOT NULL,
 	public INTEGER NOT NULL
 );
-";
+"; // TODO make schema specific for mysql
 
+#[cfg(feature = "postgres")]
 const POSTGRES_SCHEMA : &str = "
 CREATE TABLE IF NOT EXISTS pages (
 	id SERIAL PRIMARY KEY,
