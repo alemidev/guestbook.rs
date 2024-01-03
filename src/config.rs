@@ -38,7 +38,7 @@ pub struct ConfigTemplate {
 	#[serde_inline_default("guestbook".into())]
 	pub title: String,
 
-	#[serde_inline_default("https://cdn.alemi.dev/social/someriver.jpg".into())]
+	#[serde_inline_default("/logo.jpg".into())]
 	pub logo: String,
 
 	#[serde_inline_default("you found my guestbook! please take a moment to sign it (:".into())]

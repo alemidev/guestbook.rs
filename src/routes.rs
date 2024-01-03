@@ -16,6 +16,8 @@ pub fn create_router_with_app_routes(state: Context) -> Router {
 		use sailfish::TemplateOnce;
 		let template = state.template.clone();
 		router = router
+			.route("/favicon.ico", get(|| async { crate::web::STATIC_FAVICON }))
+			.route("/logo.jpg", get(|| async { crate::web::STATIC_LOGO }))
 			.route("/style.css", get(|| async { Css(crate::web::STATIC_CSS) }))
 			.route("/infiniscroll.js", get(|| async { JavaScript(crate::web::STATIC_JS) }))
 			.route("/", get(|| async move {
