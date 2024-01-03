@@ -55,7 +55,7 @@ https://cdn.alemi.dev/guestbook/0.3.0.js
 this provides a plain JS (+jsdoc! check type hints) module exporting one function to hook the automatic infinite scroll fetcher
 
 you can also manage things with your framework of choice, just `GET /api?offset=x&limit=y` to receive a list of public pages
-```js
+```typescript
 class GuestbookPage {
     id: number
     author: string
@@ -68,7 +68,7 @@ class GuestbookPage {
 ```
 
 inserting a new page can be done with either a `POST` (+form) or a `PUT` (+json) request on `/api` endpoint
-```js
+```typescript
 class GuestbookInsertion {
     body: string,
     author: string | undefined,
