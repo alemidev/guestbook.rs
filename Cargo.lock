@@ -908,6 +908,8 @@ dependencies = [
  "md-5",
  "sailfish",
  "serde",
+ "serde-inline-default",
+ "serde_default",
  "serde_json",
  "sqlx",
  "teloxide",
@@ -2308,6 +2310,29 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b114498256798c94a0689e1a15fec6005dee8ac1f41de56404b67afc2a4b773"
 dependencies = [
  "serde_derive",
+]
+
+[[package]]
+name = "serde-inline-default"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fa824cde50b5f01ff28a955114d8152a07cd62d81f53459dad0f2610136be844"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
+name = "serde_default"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9fd4c77b86d9fb10363e52607ca6dc3043d8dfde6c790b702ed4ffafb34e7b99"
+dependencies = [
+ "darling",
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
 ]
 
 [[package]]
