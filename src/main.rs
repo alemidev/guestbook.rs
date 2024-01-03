@@ -45,7 +45,7 @@ enum CliAction {
 	},
 
 	/// print a sample configuration, redirect to file and customize
-	Default,
+	Config,
 
 	/// review sent pages and approve for public view
 	Review {
@@ -64,7 +64,7 @@ async fn main() {
 		.init();
 
 	match args.action {
-		CliAction::Default => println!("{}", toml::to_string(&Config::default()).unwrap()),
+		CliAction::Config => println!("{}", toml::to_string(&Config::default()).unwrap()),
 		CliAction::Review { batch } => {
 			use std::io::Write;
 			sqlx::any::install_default_drivers(); // must install all available drivers before connecting
