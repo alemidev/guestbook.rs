@@ -1,4 +1,5 @@
 use chrono::Utc;
+use sqlx::Database;
 
 use crate::{model::{PageView, PageInsertion, Page}, config::ConfigOverrides};
 
@@ -8,17 +9,29 @@ pub struct StorageProvider {
 	overrides: ConfigOverrides,
 }
 
-// TODO bool type is not supported in Any driver?????
-//  so the `public` field is an integer which is ridicolous
-//  but literally cannot get it to work ffs
+// TODO what the fuck is wrong with AnyPool driver?????
+// * deserializing Option<T> values on AnyDriver is broken, pr to fix is in progress
+//    https://github.com/launchbadge/sqlx/issues/2416
+//    https://github.com/launchbadge/sqlx/pull/2716
+//   until this is merged, must implement by hand sqlx::FromRow<sqlx::any::AnyRow>
+//   once this is merged, just do #[derive(sqlx::FromRow)]
 //
-//  https://github.com/launchbadge/sqlx/issues/2778
+// * serializing Option<T> values on Postgres is unreliable, not even sure why?
+//    `incorrect binary data format in bind parameter`
+//    it seems related to expression caching and types that change (sometimes T, sometimes NULL)
+//     https://github.com/launchbadge/sqlx/issues/2885
+//    the suggested solution (`.persistent(false)`) doesn't work!
+//    we are forced to serialize NULLs as empty strings and lose the distinction
+//
+// * deserializing BOOL just doesn't work for some reason
+//    https://github.com/launchbadge/sqlx/issues/2778
+//   so the `public` field is an integer which is ridicolous
 
 const SQLITE_SCHEMA : &str = "
 CREATE TABLE IF NOT EXISTS pages (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
 	author VARCHAR NOT NULL,
-	contact VARCHAR,
+	contact VARCHAR NOT NULL,
 	body VARCHAR NOT NULL,
 	timestamp INTEGER NOT NULL,
 	public INTEGER NOT NULL
@@ -29,7 +42,7 @@ const POSTGRES_SCHEMA : &str = "
 CREATE TABLE IF NOT EXISTS pages (
 	id SERIAL PRIMARY KEY,
 	author TEXT NOT NULL,
-	contact TEXT,
+	contact TEXT NOT NULL,
 	body TEXT NOT NULL,
 	timestamp INTEGER NOT NULL,
 	public INTEGER NOT NULL
@@ -41,9 +54,9 @@ impl StorageProvider {
 		let db = sqlx::AnyPool::connect(dest).await?;
 
 		match db.acquire().await?.backend_name() {
-			"PostgreSQL" => { sqlx::query(POSTGRES_SCHEMA).execute(&db).await?; },
-			"SQLite" => { sqlx::query(SQLITE_SCHEMA).execute(&db).await?; },
-			"MySQL" => { sqlx::query(SQLITE_SCHEMA).execute(&db).await?; }, // TODO will this work?
+			sqlx::Postgres::NAME => { sqlx::query(POSTGRES_SCHEMA).execute(&db).await?; },
+			sqlx::Sqlite::NAME => { sqlx::query(SQLITE_SCHEMA).execute(&db).await?; },
+			sqlx::MySql::NAME => { sqlx::query(SQLITE_SCHEMA).execute(&db).await?; }, // TODO will this work?
 			_ => tracing::warn!("could not ensure schema: unsupported database type"),
 		}
 
@@ -54,9 +67,9 @@ impl StorageProvider {
 		page.sanitize();
 		page.overrides(&self.overrides);
 		let result = sqlx::query("INSERT INTO pages (author, contact, body, timestamp, public) VALUES ($1, $2, $3, $4, $5)")
-			.bind(page.author.as_deref().unwrap_or("anonymous").to_string())
-			.bind(page.contact.clone())
-			.bind(page.body.clone())
+			.bind(page.author.as_deref().unwrap_or("anonymous"))
+			.bind(page.contact.as_deref().unwrap_or(""))
+			.bind(page.body.as_str())
 			.bind(page.date.unwrap_or(Utc::now()).timestamp())
 			.bind(if page.public.unwrap_or(true) { 1 } else { 0 })
 			.execute(&self.db)
@@ -74,7 +87,7 @@ impl StorageProvider {
 	}
 
 	pub async fn extract(&self, offset: i32, window: i32, public: bool) -> sqlx::Result<Vec<PageView>> {
-		let out = sqlx::query_as("SELECT * FROM pages WHERE public = $1 LIMIT $2 OFFSET $3")
+		let out = sqlx::query_as::<_, Page>("SELECT * FROM pages WHERE public = $1 LIMIT $2 OFFSET $3")
 			.bind(if public { 1 } else { 0 }) // TODO since AnyPool won't handle booleans we compare with an integer
 			.bind(window)
 			.bind(offset)

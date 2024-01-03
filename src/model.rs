@@ -20,29 +20,21 @@ pub struct Page {
 	pub public: bool,
 }
 
-// TODO
-// deserializing Option<T> values on AnyDriver is broken, pr to fix is in progress
-//  https://github.com/launchbadge/sqlx/issues/2416
-//  https://github.com/launchbadge/sqlx/pull/2716
-// until this is merged, must implement by hand
-// once this is merged, just do #[derive(sqlx::FromRow)]
-// also what the fuck is going on with bools???
-//  https://github.com/launchbadge/sqlx/issues/2778
+// TODO this is only necessary until sqlx fixes parsing BOOL and NULL, check model.rs for more
 impl<'r> sqlx::FromRow<'r, sqlx::any::AnyRow> for Page {
 	fn from_row(row: &'r sqlx::any::AnyRow) -> Result<Self, sqlx::Error> {
 		Ok(
 			Page {
-				id: row.get(0),
-				author: row.get(1),
-				contact: row.try_get(2).ok(),
-				body: row.get(3),
-				timestamp: row.get(4),
+				id: row.get::<i64, usize>(0),
+				author: row.get::<String, usize>(1),
+				contact: _non_empty_string(row.get::<String, usize>(2)),
+				body: row.get::<String, usize>(3),
+				timestamp: row.get::<i64, usize>(4),
 				public: row.get::<i32, usize>(5) > 0,
 			}
 		)
 	}
 }
-
 
 
 
@@ -127,4 +119,11 @@ impl PageInsertion {
 pub struct PageOptions {
 	pub offset: Option<i32>,
 	pub limit: Option<i32>,
+}
+
+fn _non_empty_string(input: String) -> Option<String> {
+	match input.is_empty() {
+		true => None,
+		false => Some(input),
+	}
 }
