@@ -73,9 +73,9 @@ impl StorageProvider {
 		)
 	}
 
-	pub async fn extract(&self, offset: i32, window: i32) -> sqlx::Result<Vec<PageView>> {
-		// TODO since AnyPool won't handle booleans we compare with an integer
-		let out = sqlx::query_as("SELECT * FROM pages WHERE public = 1 LIMIT $1 OFFSET $2")
+	pub async fn extract(&self, offset: i32, window: i32, public: bool) -> sqlx::Result<Vec<PageView>> {
+		let out = sqlx::query_as("SELECT * FROM pages WHERE public = $1 LIMIT $2 OFFSET $3")
+			.bind(if public { 1 } else { 0 }) // TODO since AnyPool won't handle booleans we compare with an integer
 			.bind(window)
 			.bind(offset)
 			.fetch_all(&self.db)
@@ -84,5 +84,13 @@ impl StorageProvider {
 			.map(PageView::from)
 			.collect();
 		Ok(out)
+	}
+
+	pub async fn publish(&self, id: i64) -> sqlx::Result<()> {
+		sqlx::query("UPDATE pages SET public = 1 WHERE id = $1")
+			.bind(id)
+			.execute(&self.db)
+			.await?;
+		Ok(())
 	}
 }

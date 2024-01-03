@@ -1,5 +1,6 @@
-use std::net::SocketAddr;
+use std::{net::SocketAddr, io::Write};
 use clap::{Parser, Subcommand};
+use config::ConfigOverrides;
 
 use crate::{storage::StorageProvider, routes::Context, notifications::console::ConsoleTracingNotifier, config::{Config, ConfigNotifierProvider}};
 
@@ -43,6 +44,13 @@ enum CliAction {
 
 	/// print a sample configuration, redirect to file and customize
 	Default,
+
+	/// review sent pages and approve for public view
+	Review {
+		#[arg(long, default_value_t = 20)]
+		/// how many pages to fetch per query
+		batch: i32,
+	},
 }
 
 #[tokio::main]
@@ -60,6 +68,31 @@ async fn main() {
 			#[cfg(feature = "telegram")]
 			cfg.notifiers.providers.push(ConfigNotifierProvider::TelegramNotifier { token: "asd".into(), chat_id: -1 });
 			println!("{}", toml::to_string(&cfg).unwrap());
+		},
+		CliAction::Review { batch } => {
+			sqlx::any::install_default_drivers(); // must install all available drivers before connecting
+			let storage = StorageProvider::connect(&args.db, ConfigOverrides::default()).await.unwrap();
+			let mut offset = 0;
+			let mut buffer = String::new();
+			let stdin = std::io::stdin();
+			let mut stdout = std::io::stdout();
+			loop {
+				let mut stop = true;
+				for page in storage.extract(offset, batch, false).await.unwrap() {
+					stop = false; // at least one page was returned
+					println!("{:?}", page);
+					print!("* approve? ");
+					stdout.flush().unwrap();
+					stdin.read_line(&mut buffer).unwrap();
+					if !buffer.trim().is_empty() {
+						println!("* OK published");
+						storage.publish(page.id).await.unwrap();
+					}
+				}
+				if stop { break }
+				offset += batch;
+			}
+			println!("* done");
 		},
 		CliAction::Serve { addr, config } => {
 			let addr : SocketAddr = addr.parse().expect("invalid host provided");

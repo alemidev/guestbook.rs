@@ -49,7 +49,7 @@ async fn get_suggestion(State(state): State<Arc<Context>>, Query(page): Query<Pa
 	let limit = std::cmp::min(page.limit.unwrap_or(20), 20);
 	tracing::debug!("serving suggestions (offset {} limit {}", offset, limit);
 
-	match state.storage.extract(offset, limit).await {
+	match state.storage.extract(offset, limit, true).await {
 		Ok(x) => Ok(Json(x)),
 		Err(e) => Err(e.to_string()),
 	}

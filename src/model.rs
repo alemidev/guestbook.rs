@@ -48,6 +48,7 @@ impl<'r> sqlx::FromRow<'r, sqlx::any::AnyRow> for Page {
 
 #[derive(Debug, Clone, Default, Serialize)]
 pub struct PageView {
+	pub id: i64,
 	pub author: String,
 	pub contact: Option<String>,
 	pub url: Option<String>,
@@ -76,6 +77,7 @@ impl From<&Page> for PageView {
 		};
 
 		PageView {
+			id: page.id,
 			url, avatar,
 			author: page.author.clone(),
 			contact: page.contact.clone(),
