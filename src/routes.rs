@@ -1,9 +1,8 @@
 use std::sync::Arc;
 
 use axum::{Json, Form, Router, routing::{put, post, get}, extract::{State, Query}, response::{Redirect, Html}};
-use axum_extra::response::{Css, JavaScript};
 
-use crate::{notifications::NotificationProcessor, model::{Page, PageOptions, PageInsertion, PageView}, storage::StorageProvider, web::IndexTemplate, config::ConfigRouting};
+use crate::{notifications::NotificationProcessor, model::{Page, PageOptions, PageInsertion, PageView}, storage::StorageProvider, config::ConfigRouting};
 
 pub fn create_router_with_app_routes(state: Context) -> Router {
 	let mut router = Router::new()
@@ -14,7 +13,9 @@ pub fn create_router_with_app_routes(state: Context) -> Router {
 	#[cfg(feature = "web")]
 	{
 		use sailfish::TemplateOnce;
-		let template = IndexTemplate::from(&state.template)
+		use axum_extra::response::{Css, JavaScript};
+
+		let template = crate::web::IndexTemplate::from(&state.template)
 			.render_once()
 			.unwrap();
 		router = router
