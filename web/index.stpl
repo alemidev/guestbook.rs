@@ -24,7 +24,7 @@
 	<div class="center">
 		<h1><%= root.title %></h1>
 		<img src="<%= root.logo %>" class="round-cover" title="guestbook cover">
-		<p><%= root.description %></p>
+		<p><%- root.description %></p>
 		<div>
 		<form action="/api" method="post">
 			<div class="full-width">
@@ -47,7 +47,7 @@
 				<td colspan="2"><hr></td>
 			</tr>
 		</table>
-		<p class="tiny" style="margin-top: 5em"><b>guestbook.rs</b> ~ made with &lt;3 by <a href="mailto:me@alemi.dev">alemi</a></p>
+		<p class="tiny" style="margin-top: 5em"><b>guestbook.rs</b> ~ <%- root.footer %></p>
 	</div>
 	<script type="module" src="/infiniscroll.js"></script>
 	<script type="module" language="javascript">

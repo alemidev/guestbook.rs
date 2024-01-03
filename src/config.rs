@@ -47,6 +47,9 @@ pub struct ConfigTemplate {
 	#[serde_inline_default("Kilroy was here  Ω".into())]
 	pub placeholder_body: String,
 
+	#[serde_inline_default("made with &lt;3 by <a href=\"https://alemi.dev/\">alemi</a>".into())]
+	pub footer: String,
+
 	#[serde(default)]
 	pub canonical: Option<String>,
 
