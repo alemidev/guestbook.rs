@@ -9,7 +9,9 @@ i love small web and i want to give a way to whoever visits my site to leave a m
 # deploy
 ## all-in-one
 `guestbook.rs` can be easily deployed without anything else: just grab (or compile) the default binary and run it:
-    $ guestbook serve
+```sh
+guestbook serve
+```
 
 it will create a sqlite database (`guestbook.db`) in current directory and start serving its frontend on http://localhost:37812/ and its backend on http://localhost:37812/api
 
@@ -28,8 +30,10 @@ by default each user is given full control on each page (except for the `date` f
 as an example, you may want to review posts before showing them publicly.
 
 add following section to your `config.toml`:
-    [overrides]
-    public = false
+```toml
+[overrides]
+public = false
+```
 
 and each incoming page will be forced to be private (until you make it public manually with `guestbook review`)
 
@@ -43,31 +47,36 @@ all notifiers are bundled, but just like db drivers it's possible to only includ
 the integrated frontend is not necessary, and can be excluded by disabling the `web` feature. serve your favorite page and just use the `/api` endpoint for fetching pages.
 
 ### making your own frontend
-the JS file used by the builtin frontend is available here:
-    https://cdn.alemi.dev/guestbook/0.2.0.js
+the JS file used by the builtin frontend is available [here](https://cdn.alemi.dev/guestbook/0.3.0.js):
+```
+https://cdn.alemi.dev/guestbook/0.3.0.js
+```
 
 this provides a plain JS (+jsdoc! check type hints) module exporting one function to hook the automatic infinite scroll fetcher
 
 you can also manage things with your framework of choice, just `GET /api?offset=x&limit=y` to receive a list of public pages
-    class GuestbookPage {
-        id: number
-        author: string
-        contact: string | undefined
-        url: string | undefined
-        avatar: string
-        body: string,
-        date: Date,
-    }
+```js
+class GuestbookPage {
+    id: number
+    author: string
+    contact: string | undefined
+    url: string | undefined
+    avatar: string
+    body: string,
+    date: Date,
+}
+```
 
 inserting a new page can be done with either a `POST` (+form) or a `PUT` (+json) request on `/api` endpoint
-    class GuestbookInsertion {
-        body: string,
-        author: string | undefined,
-        contact: string | undefined,
-        public: boolean | undefined,
-        date: Date | undefined,
-    }
-
+```js
+class GuestbookInsertion {
+    body: string,
+    author: string | undefined,
+    contact: string | undefined,
+    public: boolean | undefined,
+    date: Date | undefined,
+}
+```
 
 # future work
 due to the modular structure of notifiers, i plan to add many more notifiers for various services, such as
