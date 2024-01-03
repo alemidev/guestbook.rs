@@ -115,7 +115,7 @@ async fn main() {
 			if_using_sqlite_driver_and_file_is_missing_create_it_beforehand(&args.db);
 			let storage = StorageProvider::connect(&args.db, config.overrides).await.unwrap();
 
-			let mut state = Context::new(storage, #[cfg(feature = "web")] config.template);
+			let mut state = Context::new(storage, config.routing, #[cfg(feature = "web")] config.template);
 
 			for notifier in config.notifiers.providers {
 				match notifier {

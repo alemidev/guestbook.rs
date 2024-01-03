@@ -17,7 +17,18 @@ pub struct Config {
 
 	#[serde(default)]
 	pub template: ConfigTemplate,
+
+	#[serde(default)]
+	pub routing: ConfigRouting,
 }
+
+#[serde_inline_default]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, serde_default::DefaultFromSerde)]
+pub struct ConfigRouting {
+	#[serde_inline_default("/".into())]
+	pub redirect: String,
+}
+
 
 #[serde_inline_default]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, serde_default::DefaultFromSerde)]

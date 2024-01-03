@@ -3,7 +3,7 @@ use std::sync::Arc;
 use axum::{Json, Form, Router, routing::{put, post, get}, extract::{State, Query}, response::{Redirect, Html}};
 use axum_extra::response::{Css, JavaScript};
 
-use crate::{notifications::NotificationProcessor, model::{Page, PageOptions, PageInsertion, PageView}, storage::StorageProvider, web::IndexTemplate};
+use crate::{notifications::NotificationProcessor, model::{Page, PageOptions, PageInsertion, PageView}, storage::StorageProvider, web::IndexTemplate, config::ConfigRouting};
 
 pub fn create_router_with_app_routes(state: Context) -> Router {
 	let mut router = Router::new()
@@ -31,6 +31,7 @@ pub fn create_router_with_app_routes(state: Context) -> Router {
 pub struct Context {
 	providers: Vec<Box<dyn NotificationProcessor<Page>>>,
 	storage: StorageProvider,
+	routing: ConfigRouting,
 
 	#[cfg(feature = "web")]
 	template: crate::config::ConfigTemplate,
@@ -39,11 +40,12 @@ pub struct Context {
 impl Context {
 	pub fn new(
 		storage: StorageProvider,
+		routing: ConfigRouting,
 		#[cfg(feature = "web")] template: crate::config::ConfigTemplate,
 	) -> Self {
 		Context {
 			providers: Vec::new(),
-			storage,
+			storage, routing,
 			#[cfg(feature = "web")] template,
 		}
 	}
@@ -61,7 +63,7 @@ async fn send_suggestion(payload: PageInsertion, state: Arc<Context>) -> Result<
 			for p in state.providers.iter() {
 				p.process(&page).await;
 			}
-			Ok(Redirect::to("/"))
+			Ok(Redirect::to(&state.routing.redirect))
 		},
 	}
 }
