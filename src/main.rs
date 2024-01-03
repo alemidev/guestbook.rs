@@ -2,7 +2,7 @@ use std::{net::SocketAddr, io::Write};
 use clap::{Parser, Subcommand};
 use config::ConfigOverrides;
 
-use crate::{storage::StorageProvider, routes::Context, notifications::console::ConsoleTracingNotifier, config::{Config, ConfigNotifierProvider}};
+use crate::{storage::StorageProvider, routes::Context, notifications::console::ConsoleTracingNotifier, config::{Config, NotifierProvider}};
 
 mod notifications;
 
@@ -64,9 +64,9 @@ async fn main() {
 	match args.action {
 		CliAction::Default => {
 			let mut cfg = Config::default();
-			cfg.notifiers.providers.push(ConfigNotifierProvider::ConsoleNotifier);
+			cfg.notifiers.providers.push(NotifierProvider::Console);
 			#[cfg(feature = "telegram")]
-			cfg.notifiers.providers.push(ConfigNotifierProvider::TelegramNotifier { token: "asd".into(), chat_id: -1 });
+			cfg.notifiers.providers.push(NotifierProvider::Telegram { token: "asd".into(), chat_id: -1 });
 			println!("{}", toml::to_string(&cfg).unwrap());
 		},
 		CliAction::Review { batch } => {
@@ -112,18 +112,31 @@ async fn main() {
 
 			for notifier in config.notifiers.providers {
 				match notifier {
-					ConfigNotifierProvider::ConsoleNotifier => {
+					NotifierProvider::Console => {
 						tracing::info!("registering console notifier");
 						state.register(Box::new(ConsoleTracingNotifier {}));
 					},
 
 					#[cfg(feature = "telegram")]
-					ConfigNotifierProvider::TelegramNotifier { token, chat_id } => {
+					NotifierProvider::Telegram { token, chat_id } => {
 						tracing::info!("registering telegram notifier for chat {}", chat_id);
 						state.register(Box::new(
 							notifications::telegram::TGNotifier::new(&token, chat_id)
 						));
 					},
+
+					#[cfg(feature = "email")]
+					NotifierProvider::Email {
+						server, port, username, password, from, to, subject
+					} => {
+						tracing::info!("registering email notifier to {} on server {}:{} ('{}')", to, server, port, subject);
+						state.register(Box::new(
+							notifications::email::EmailNotifier::new(
+								&server, port, &username, &password, &from, &to, &subject
+							).await
+						));
+
+					}
 				}
 			}
 

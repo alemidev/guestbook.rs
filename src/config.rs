@@ -17,19 +17,39 @@ pub struct ConfigOverrides {
 	pub date: bool,
 }
 
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ConfigNotifiers {
-	pub providers: Vec<ConfigNotifierProvider>,
+	pub providers: Vec<NotifierProvider>,
+}
+
+// by default enable console notifier
+impl Default for ConfigNotifiers {
+	fn default() -> Self {
+		ConfigNotifiers {
+			providers: vec![NotifierProvider::Console],
+		}
+	}
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub enum ConfigNotifierProvider {
-	ConsoleNotifier,
+pub enum NotifierProvider {
+	Console,
 
 	#[cfg(feature = "telegram")]
-	TelegramNotifier {
+	Telegram {
 		token: String,
 		chat_id: i64,
+	},
+
+	#[cfg(feature = "email")]
+	Email {
+		server: String,
+		port: u16,
+		username: String,
+		password: String,
+		from: String,
+		to: String,
+		subject: String,
 	},
 }
 

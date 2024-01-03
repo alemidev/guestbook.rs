@@ -2,6 +2,9 @@
 #[cfg(feature = "telegram")]
 pub mod telegram;
 
+#[cfg(feature = "email")]
+pub mod email;
+
 pub mod console;
 
 
