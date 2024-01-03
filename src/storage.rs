@@ -54,9 +54,15 @@ impl StorageProvider {
 		let db = sqlx::AnyPool::connect(dest).await?;
 
 		match db.acquire().await?.backend_name() {
+			#[cfg(feature = "postgres")]
 			sqlx::Postgres::NAME => { sqlx::query(POSTGRES_SCHEMA).execute(&db).await?; },
+
+			#[cfg(feature = "sqlite")]
 			sqlx::Sqlite::NAME => { sqlx::query(SQLITE_SCHEMA).execute(&db).await?; },
+
+			#[cfg(feature = "mysql")]
 			sqlx::MySql::NAME => { sqlx::query(SQLITE_SCHEMA).execute(&db).await?; }, // TODO will this work?
+
 			_ => tracing::warn!("could not ensure schema: unsupported database type"),
 		}
 
