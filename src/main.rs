@@ -15,7 +15,7 @@ mod web;
 
 
 #[derive(Debug, Clone, Parser)]
-#[command(author, version, about)]
+#[command(author = clap::crate_authors!("\n"), version = clap::crate_version!(), about = clap::crate_description!())]
 /// api for sending anonymous telegram messages to a specific user
 struct CliArgs {
 	/// action to execute
