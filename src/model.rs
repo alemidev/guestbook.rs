@@ -104,18 +104,14 @@ impl PageInsertion {
 	}
 
 	pub fn sanitize(&mut self) {
-		if let Some(author) = self.author.as_mut() {
-			*author = Self::trim_and_escape(author, AUTHOR_MAX_CHARS);
-		}
-		if self.author.is_some() && self.author.as_deref().unwrap().is_empty() {
-			self.author = None;
-		}
-		if let Some(contact) = self.contact.as_mut() {
-			*contact = Self::trim_and_escape(contact, CONTACT_MAX_CHARS);
-		}
-		if self.contact.is_some() && self.contact.as_deref().unwrap().is_empty() {
-			self.contact = None;
-		}
+		self.author = self.author.as_mut()
+			.map(|a| Self::trim_and_escape(a, AUTHOR_MAX_CHARS).to_string())
+			.and_then(|a| if a.is_empty() { None } else { Some(a) });
+
+		self.contact = self.contact.as_mut()
+			.map(|c| Self::trim_and_escape(c, CONTACT_MAX_CHARS).to_string())
+			.and_then(|c| if c.is_empty() { None } else { Some(c) });
+
 		self.body = Self::trim_and_escape(&self.body, BODY_MAX_CHARS);
 	}
 
