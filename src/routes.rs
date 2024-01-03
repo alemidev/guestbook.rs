@@ -14,21 +14,15 @@ pub fn create_router_with_app_routes(state: Context) -> Router {
 	#[cfg(feature = "web")]
 	{
 		use sailfish::TemplateOnce;
-		let template = state.template.clone();
+		let template = IndexTemplate::from(&state.template)
+			.render_once()
+			.unwrap();
 		router = router
+			.route("/", get(|| async { Html(template) }))
 			.route("/favicon.ico", get(|| async { crate::web::STATIC_FAVICON }))
 			.route("/logo.jpg", get(|| async { crate::web::STATIC_LOGO }))
 			.route("/style.css", get(|| async { Css(crate::web::STATIC_CSS) }))
-			.route("/infiniscroll.js", get(|| async { JavaScript(crate::web::STATIC_JS) }))
-			.route("/", get(|| async move {
-				match IndexTemplate::from(&template).render_once() {
-					Ok(txt) => Ok(Html(txt)),
-					Err(e) => Err((
-						axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-						format!("could not render template: {}", e)
-					)),
-				}
-			}));
+			.route("/infiniscroll.js", get(|| async { JavaScript(crate::web::STATIC_JS) }));
 	}
 
 	router.with_state(Arc::new(state))
