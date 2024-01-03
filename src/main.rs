@@ -1,4 +1,3 @@
-use std::{net::SocketAddr, io::Write};
 use clap::{Parser, Subcommand};
 use config::ConfigOverrides;
 
@@ -10,6 +9,9 @@ mod routes;
 mod model;
 mod storage;
 mod config;
+
+#[cfg(feature = "web")]
+mod web;
 
 
 #[derive(Debug, Clone, Parser)]
@@ -62,15 +64,11 @@ async fn main() {
 		.init();
 
 	match args.action {
-		CliAction::Default => {
-			let mut cfg = Config::default();
-			cfg.notifiers.providers.push(NotifierProvider::Console);
-			#[cfg(feature = "telegram")]
-			cfg.notifiers.providers.push(NotifierProvider::Telegram { token: "asd".into(), chat_id: -1 });
-			println!("{}", toml::to_string(&cfg).unwrap());
-		},
+		CliAction::Default => println!("{}", toml::to_string(&Config::default()).unwrap()),
 		CliAction::Review { batch } => {
+			use std::io::Write;
 			sqlx::any::install_default_drivers(); // must install all available drivers before connecting
+			if_using_sqlite_driver_and_file_is_missing_create_it_beforehand(&args.db);
 			let storage = StorageProvider::connect(&args.db, ConfigOverrides::default()).await.unwrap();
 			let mut offset = 0;
 			let mut buffer = String::new();
@@ -95,8 +93,6 @@ async fn main() {
 			println!("* done");
 		},
 		CliAction::Serve { addr, config } => {
-			let addr : SocketAddr = addr.parse().expect("invalid host provided");
-
 			let config = match config {
 				None => Config::default(),
 				Some(path) => {
@@ -106,9 +102,10 @@ async fn main() {
 			};
 
 			sqlx::any::install_default_drivers(); // must install all available drivers before connecting
+			if_using_sqlite_driver_and_file_is_missing_create_it_beforehand(&args.db);
 			let storage = StorageProvider::connect(&args.db, config.overrides).await.unwrap();
 
-			let mut state = Context::new(storage);
+			let mut state = Context::new(storage, #[cfg(feature = "web")] config.template);
 
 			for notifier in config.notifiers.providers {
 				match notifier {
@@ -142,12 +139,28 @@ async fn main() {
 
 			let router = routes::create_router_with_app_routes(state);
 
-			tracing::info!("listening on {}", addr);
+			tracing::info!("serving on http://{}/", addr);
 
-			axum::Server::bind(&addr)
-				.serve(router.into_make_service())
+			let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
+
+			axum::serve(listener, router)
 				.await
 				.unwrap();
 		}
 	}
+}
+
+// it drives me nuts that it doesn't do it by default!!! is there an option?
+fn if_using_sqlite_driver_and_file_is_missing_create_it_beforehand(uri: &str) {
+	use std::str::FromStr;
+	if !uri.starts_with("sqlite://") { return };
+	let path = uri.replace("sqlite://", "");
+	if let Ok(p) = std::path::PathBuf::from_str(&path) {
+		if !p.is_file() {
+			if let Err(e) = std::fs::File::create(p) {
+				tracing::warn!("could not create sqlite database file at {} : {}", path, e);
+			}
+		}
+	}
+
 }

@@ -86,10 +86,10 @@ impl StorageProvider {
 		)
 	}
 
-	pub async fn extract(&self, offset: i32, window: i32, public: bool) -> sqlx::Result<Vec<PageView>> {
+	pub async fn extract(&self, offset: i32, limit: i32, public: bool) -> sqlx::Result<Vec<PageView>> {
 		let out = sqlx::query_as::<_, Page>("SELECT * FROM pages WHERE public = $1 ORDER BY timestamp DESC LIMIT $2 OFFSET $3")
 			.bind(if public { 1 } else { 0 }) // TODO since AnyPool won't handle booleans we compare with an integer
-			.bind(window)
+			.bind(limit)
 			.bind(offset)
 			.fetch_all(&self.db)
 			.await?

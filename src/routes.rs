@@ -1,25 +1,55 @@
 use std::sync::Arc;
 
-use axum::{Json, Form, Router, routing::{put, post, get}, extract::{State, Query}, response::Redirect};
+use axum::{Json, Form, Router, routing::{put, post, get}, extract::{State, Query}, response::{Redirect, Html}};
+use axum_extra::response::{Css, JavaScript};
 
-use crate::{notifications::NotificationProcessor, model::{Page, PageOptions, PageInsertion, PageView}, storage::StorageProvider};
+use crate::{notifications::NotificationProcessor, model::{Page, PageOptions, PageInsertion, PageView}, storage::StorageProvider, web::IndexTemplate};
 
 pub fn create_router_with_app_routes(state: Context) -> Router {
-	Router::new()
+	let mut router = Router::new()
 		.route("/api", get(get_suggestion))
 		.route("/api", post(send_suggestion_form))
-		.route("/api", put(send_suggestion_json))
-		.with_state(Arc::new(state))
+		.route("/api", put(send_suggestion_json));
+
+	#[cfg(feature = "web")]
+	{
+		use sailfish::TemplateOnce;
+		let template = state.template.clone();
+		router = router
+			.route("/style.css", get(|| async { Css(crate::web::STATIC_CSS) }))
+			.route("/infiniscroll.js", get(|| async { JavaScript(crate::web::STATIC_JS) }))
+			.route("/", get(|| async move {
+				match IndexTemplate::from(&template).render_once() {
+					Ok(txt) => Ok(Html(txt)),
+					Err(e) => Err((
+						axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+						format!("could not render template: {}", e)
+					)),
+				}
+			}));
+	}
+
+	router.with_state(Arc::new(state))
 }
 
 pub struct Context {
 	providers: Vec<Box<dyn NotificationProcessor<Page>>>,
 	storage: StorageProvider,
+
+	#[cfg(feature = "web")]
+	template: crate::config::ConfigTemplate,
 }
 
 impl Context {
-	pub fn new(storage: StorageProvider) -> Self {
-		Context { providers: Vec::new(), storage }
+	pub fn new(
+		storage: StorageProvider,
+		#[cfg(feature = "web")] template: crate::config::ConfigTemplate,
+	) -> Self {
+		Context {
+			providers: Vec::new(),
+			storage,
+			#[cfg(feature = "web")] template,
+		}
 	}
 	
 	pub fn register(&mut self, notifier: Box<dyn NotificationProcessor<Page>>) {

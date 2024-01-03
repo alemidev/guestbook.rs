@@ -20,19 +20,19 @@ async-trait = "0.1.73"
 html-escape = "0.2.13"
 clap = { version = "4.4.6", features = ["derive"] }
 tokio = { version = "1.33.0", features = ["macros", "rt-multi-thread"] }
-axum = "0.6.20"
+axum = "0.7.3"
 # db providers
 sqlx = { version = "0.7.3", features = ["runtime-tokio", "tls-rustls", "any"] }
 # notification providers
 teloxide = { version = "0.12.2", features = ["macros"], optional = true }
 mail-send = { version = "0.4.6", optional = true }
 tokio-rustls = { version = "0.25.0", optional = true }
+# frontend
+sailfish = { version = "0.8.3", optional = true }
+axum-extra = "0.9.1"
 
 [features]
-default = [
-	"mysql", "sqlite", "postgres",
-	"telegram", "email"
-]
+default = ["mysql", "sqlite", "postgres", "telegram", "email", "web"] # all features by default
 # db drivers
 mysql = ["sqlx/mysql"]
 sqlite = ["sqlx/sqlite"]
@@ -40,3 +40,5 @@ postgres = ["sqlx/postgres"]
 # notifier providers
 telegram = ["dep:teloxide"]
 email = ["dep:mail-send", "dep:tokio-rustls"]
+# frontend
+web = ["dep:sailfish"]

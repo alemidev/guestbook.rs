@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title><%= root.title %></title>
+	<% if let Some(href) = &root.canonical { %><link rel="canonical" href="<%= href %>"><% } %>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta property="og:type" content="website">
+	<meta property="og:title" content="<%= root.title %>">
+	<meta property="og:description" content="<%= root.description %>">
+	<style>
+	:root {
+		--bg-primary: <%= root.palette.bg_main %>;
+		--bg-secondary: <%= root.palette.bg_off %>;
+		--fg-primary: <%= root.palette.fg_main %>;
+		--fg-secondary: <%= root.palette.fg_off %>;
+		--accent: <%= root.palette.accent %>;
+		--accent-dark: <%= root.palette.accent_dark %>;
+		--accent-light: <%= root.palette.accent_light %>;
+	}
+	</style>
+	<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+	<div class="center">
+		<h1><%= root.title %></h1>
+		<img src="<%= root.logo %>" class="round-cover" title="guestbook cover">
+		<p><%= root.description %></p>
+		<div>
+		<form action="/api" method="post">
+			<div class="full-width">
+				<!-- TODO can i get this textarea to be full width without weird magic percentages?? -->
+				<textarea class="input-fields" name="body" placeholder="<%= root.placeholder_body %>" title="main message body, html will be escaped" required></textarea>
+			</div>
+			<div class="full-width">
+				<input class="input-fields" type="text" name="author" maxlength="25" placeholder="your name" title="name to show next to your comment" required>
+				<input class="input-fields" type="text" name="contact" maxlength="50" title="email or website, optional, used for avatar (libravatar.org)" placeholder="contact (optional)">
+				<input class="input-button" type="submit" value="send!">
+			</div>
+		</form>
+		</div>
+		<table id="#container" class="center" style="margin-top: 3em" cellspacing="0">
+			<tr>
+				<td style="width: 20%"></td>
+				<td style="width: 80%"></td>
+			</tr>
+			<tr>
+				<td colspan="2"><hr></td>
+			</tr>
+		</table>
+		<p class="tiny" style="margin-top: 5em"><b>guestbook.rs</b> ~ made with &lt;3 by <a href="mailto:me@alemi.dev">alemi</a></p>
+	</div>
+	<script type="module" src="/infiniscroll.js"></script>
+	<script type="module" language="javascript">
+		import hookInfiniteScroll from "./infiniscroll.js";
+
+		hookInfiniteScroll((repl) => {
+			return `
+				<tr>
+					<td>
+						${repl.url ? '<a href="' + repl.url + '">' : ''}
+						<img class="avatar" src="https://seccdn.libravatar.org/avatar/${repl.avatar}?s=150&default=identicon">
+						${repl.url ? '</a>' : '' }
+					</td>
+					<td rowspan="2">
+						<p style="text-align: left">${repl.body}</p>
+						<p class="tiny" style="text-align: right">${(new Date(repl.date)).toLocaleString()}</p>
+					</td>
+				</tr>
+				<tr>
+					<td>
+						<details>
+							<summary>
+								${repl.contact ? '<b class="contact">' : ''}
+								<span class="author">${repl.author}</span>
+								${repl.contact ? '</b>' : ''}
+							</summary>
+							<i class="tiny">${repl.contact ? repl.contact : ''}</i>
+						</details>
+					</td>
+				</tr>
+				<tr>
+					<td colspan="2"><hr></td>
+				</tr>`
+		});
+	</script>
+</body>
+
+</html>
+

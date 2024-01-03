@@ -1,0 +1,160 @@
+body {
+	background: var(--bg-primary);
+	color: var(--fg-primary);
+	font-family: sans-serif;
+}
+
+a:link {
+	color: var(--accent);
+}
+
+a:visited {
+	color: var(--accent-dark);
+}
+
+a:hover {
+	color: var(--accent-light);
+}
+
+a:active {
+	color: var(--accent-light);
+	font-weight: bold;
+}
+
+h1 {
+	color: var(--accent);
+}
+
+hr {
+	border-color: var(--accent);
+}
+
+.center {
+	text-align: center;
+	width: 60%;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+table.center {
+	padding-left: 5em;
+	padding-right: 5em;
+}
+
+.full-width {
+	width: 100%;
+}
+
+.tiny {
+	font-size: .5em;
+}
+
+img.avatar {
+	border-radius: 50%;
+	padding: .25em;
+	width: 2.25em;
+	height: 2.25em;
+	border: solid .125em var(--accent);
+}
+
+a img.avatar:hover {
+	padding: .125em;
+	border: solid .25em var(--accent-light);
+}
+
+span.author {
+	color: var(--fg-secondary)
+}
+
+b.contact {
+	cursor: help;
+}
+
+details > summary {
+	list-style: none;
+}
+
+img.round-cover {
+	width: 45%;
+	border: solid 20px var(--accent);
+	padding: 20px;
+}
+
+input, textarea {
+	background-color: var(--bg-secondary);
+	border: 1px solid var(--accent);
+	padding: .5em;
+	margin: .5em;
+	color: var(--fg-primary);
+}
+
+textarea {
+	padding: 1em;
+}
+
+textarea.input-fields {
+	width: 50%;
+}
+
+input.input-fields {
+	width: 20%;
+}
+
+input.input-button {
+	width: 6%;
+}
+
+input:focus,
+textarea:focus {
+	outline: 2px solid var(--accent); 
+}
+
+@media screen and (max-width: 1600px) {
+	img.pixar {
+		width: 60%;
+		border: solid 15px var(--accent);
+	}
+	table.center {
+		padding-left: 1em;
+		padding-right: 1em;
+	}
+	textarea.input-fields {
+		width: 60%;
+	}
+
+	input.input-fields {
+		width: 22%;
+	}
+	
+	input.input-button {
+		width: 10%;
+	}
+}
+
+@media screen and (max-width: 900px) {
+	.center {
+		width: 80%;
+	}
+}
+
+@media screen and (max-width: 700px) {
+	img.pixar {
+		border: solid 10px var(--accent);
+		padding: 15px;
+	}
+	.center {
+		width: 100%;
+	}
+	textarea.input-fields {
+		width: 90%;
+	}
+
+	input.input-fields {
+		width: 30%;
+	}
+	
+	input.input-button {
+		width: 15%;
+	}
+}
+
