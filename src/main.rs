@@ -44,8 +44,11 @@ enum CliAction {
 		config: Option<String>,
 	},
 
-	/// print a sample configuration, redirect to file and customize
-	Config,
+	/// show resulting configuration, if no path is given show full default config
+	Config {
+		/// path to config file to process
+		path: Option<String>,
+	},
 
 	/// review sent pages and approve for public view
 	Review {
@@ -64,7 +67,14 @@ async fn main() {
 		.init();
 
 	match args.action {
-		CliAction::Config => println!("{}", toml::to_string(&Config::default()).unwrap()),
+		CliAction::Config { path } => {
+			let cfg = if let Some(p) = path {
+				toml::from_str(&std::fs::read_to_string(p).unwrap()).unwrap()
+			} else {
+				Config::default()
+			};
+			println!("{}", toml::to_string(&cfg).unwrap())
+		},
 		CliAction::Review { batch } => {
 			use std::io::Write;
 			sqlx::any::install_default_drivers(); // must install all available drivers before connecting
