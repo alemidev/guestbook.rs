@@ -1,57 +1,88 @@
-use tokio::sync::RwLock;
+use chrono::Utc;
 
-use crate::model::Page;
+use crate::{model::{PageView, PageInsertion, Page}, config::ConfigOverrides};
 
-
-#[derive(Debug, thiserror::Error)]
-pub enum StorageStrategyError {
-	#[error("could not interact with filesystem: {0}")]
-	IOError(#[from] std::io::Error),
-	#[error("could not serialize/deserialize data: {0}")]
-	JsonSerializeError(#[from] serde_json::Error),
+#[derive(Debug)]
+pub struct StorageProvider {
+	db: sqlx::Pool<sqlx::Any>,
+	overrides: ConfigOverrides,
 }
 
-#[async_trait::async_trait]
-pub trait StorageStrategy<T> : Send + Sync {
-	async fn archive(&self, payload: T) -> Result<(), StorageStrategyError>;
-	async fn extract(&self, offset: usize, window: usize) -> Result<Vec<T>, StorageStrategyError>;
-}
+// TODO bool type is not supported in Any driver?????
+//  so the `public` field is an integer which is ridicolous
+//  but literally cannot get it to work ffs
+//
+//  https://github.com/launchbadge/sqlx/issues/2778
 
+const SQLITE_SCHEMA : &str = "
+CREATE TABLE IF NOT EXISTS pages (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	author VARCHAR NOT NULL,
+	contact VARCHAR,
+	body VARCHAR NOT NULL,
+	timestamp INTEGER NOT NULL,
+	public INTEGER NOT NULL
+);
+";
 
-/// this strategy is rather inefficient since it has to iterate the whole file every time, but it
-/// requires literally zero effort
-pub struct JsonFileStorageStrategy {
-	path: RwLock<String>, // only needed to prevent race conditions on insertion
-}
+const POSTGRES_SCHEMA : &str = "
+CREATE TABLE IF NOT EXISTS pages (
+	id SERIAL PRIMARY KEY,
+	author TEXT NOT NULL,
+	contact TEXT,
+	body TEXT NOT NULL,
+	timestamp INTEGER NOT NULL,
+	public INTEGER NOT NULL
+);
+";
 
-impl JsonFileStorageStrategy {
-	pub fn new(path: &str) -> Self {
-		JsonFileStorageStrategy { path: RwLock::new(path.to_string()) }
-	}
-}
+impl StorageProvider {
+	pub async fn connect(dest: &str, overrides: ConfigOverrides) -> sqlx::Result<Self> {
+		let db = sqlx::AnyPool::connect(dest).await?;
 
-
-#[async_trait::async_trait]
-impl StorageStrategy<Page> for JsonFileStorageStrategy {
-	async fn archive(&self, payload: Page) -> Result<(), StorageStrategyError> {
-		let path = self.path.write().await;
-		let file_content = std::fs::read_to_string(&*path)?;
-		let mut current_content : Vec<Page> = serde_json::from_str(&file_content)?;
-		current_content.push(payload);
-		let updated_content = serde_json::to_string(&current_content)?;
-		std::fs::write(&*path, updated_content)?;
-		Ok(())
-	}
-
-	async fn extract(&self, offset: usize, window: usize) -> Result<Vec<Page>, StorageStrategyError> {
-		let path = self.path.read().await;
-		let file_content = std::fs::read_to_string(&*path)?;
-		let current_content : Vec<Page> = serde_json::from_str(&file_content)?;
-		let mut out = Vec::new();
-		for sugg in current_content.iter().rev().skip(offset) {
-			out.push(sugg.clone());
-			if out.len() >= window { break };
+		match db.acquire().await?.backend_name() {
+			"PostgreSQL" => { sqlx::query(POSTGRES_SCHEMA).execute(&db).await?; },
+			"SQLite" => { sqlx::query(SQLITE_SCHEMA).execute(&db).await?; },
+			"MySQL" => { sqlx::query(SQLITE_SCHEMA).execute(&db).await?; }, // TODO will this work?
+			_ => tracing::warn!("could not ensure schema: unsupported database type"),
 		}
+
+		Ok(StorageProvider { db, overrides })
+	}
+
+	pub async fn archive(&self, mut page: PageInsertion) -> sqlx::Result<Page> {
+		page.sanitize();
+		page.overrides(&self.overrides);
+		let result = sqlx::query("INSERT INTO pages (author, contact, body, timestamp, public) VALUES ($1, $2, $3, $4, $5)")
+			.bind(page.author.as_deref().unwrap_or("anonymous").to_string())
+			.bind(page.contact.clone())
+			.bind(page.body.clone())
+			.bind(page.date.unwrap_or(Utc::now()).timestamp())
+			.bind(if page.public.unwrap_or(true) { 1 } else { 0 })
+			.execute(&self.db)
+			.await?;
+		Ok(
+			Page {
+				id: result.last_insert_id().unwrap_or(-1),
+				author: page.author.unwrap_or("anonymous".into()),
+				contact: page.contact,
+				body: page.body,
+				timestamp: page.date.unwrap_or(Utc::now()).timestamp(),
+				public: page.public.unwrap_or(true),
+			}
+		)
+	}
+
+	pub async fn extract(&self, offset: i32, window: i32) -> sqlx::Result<Vec<PageView>> {
+		// TODO since AnyPool won't handle booleans we compare with an integer
+		let out = sqlx::query_as("SELECT * FROM pages WHERE public = 1 LIMIT $1 OFFSET $2")
+			.bind(window)
+			.bind(offset)
+			.fetch_all(&self.db)
+			.await?
+			.iter()
+			.map(PageView::from)
+			.collect();
 		Ok(out)
 	}
 }

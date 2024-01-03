@@ -13,7 +13,8 @@ pub struct ConfigOverrides {
 
 	pub public: Option<bool>,
 
-	pub date: Option<String>,
+	#[serde(default = "_true")]
+	pub date: bool,
 }
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
@@ -31,3 +32,5 @@ pub enum ConfigNotifierProvider {
 		chat_id: i64,
 	},
 }
+
+fn _true() -> bool { true }

@@ -1,6 +1,7 @@
 use md5::{Md5, Digest};
 use serde::{Serialize, Deserialize};
 use chrono::{DateTime, Utc};
+use sqlx::Row;
 use uuid::Uuid;
 
 use crate::config::ConfigOverrides;
@@ -11,11 +12,35 @@ const BODY_MAX_CHARS: usize = 4096;
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Page {
+	pub id: i64,
 	pub author: String,
 	pub contact: Option<String>,
 	pub body: String,
-	pub date: DateTime<Utc>,
+	pub timestamp: i64, // sqlx::Any db doesn't support DateTime<Utc>
 	pub public: bool,
+}
+
+// TODO
+// deserializing Option<T> values on AnyDriver is broken, pr to fix is in progress
+//  https://github.com/launchbadge/sqlx/issues/2416
+//  https://github.com/launchbadge/sqlx/pull/2716
+// until this is merged, must implement by hand
+// once this is merged, just do #[derive(sqlx::FromRow)]
+// also what the fuck is going on with bools???
+//  https://github.com/launchbadge/sqlx/issues/2778
+impl<'r> sqlx::FromRow<'r, sqlx::any::AnyRow> for Page {
+	fn from_row(row: &'r sqlx::any::AnyRow) -> Result<Self, sqlx::Error> {
+		Ok(
+			Page {
+				id: row.get(0),
+				author: row.get(1),
+				contact: row.try_get(2).ok(),
+				body: row.get(3),
+				timestamp: row.get(4),
+				public: row.get::<i32, usize>(5) > 0,
+			}
+		)
+	}
 }
 
 
@@ -31,8 +56,8 @@ pub struct PageView {
 	pub date: DateTime<Utc>,
 }
 
-impl From<Page> for PageView {
-	fn from(page: Page) -> Self {
+impl From<&Page> for PageView {
+	fn from(page: &Page) -> Self {
 		let mut hasher = Md5::new();
 		hasher.update(page.contact.as_deref().unwrap_or(&Uuid::new_v4().to_string()).as_bytes());
 		let avatar = format!("{:x}", hasher.finalize());
@@ -52,84 +77,56 @@ impl From<Page> for PageView {
 
 		PageView {
 			url, avatar,
-			author: page.author,
-			contact: page.contact,
-			body: page.body,
-			date: page.date,
+			author: page.author.clone(),
+			contact: page.contact.clone(),
+			body: page.body.clone(),
+			date: DateTime::from_timestamp(page.timestamp, 0).unwrap_or(DateTime::UNIX_EPOCH),
 		}
 	}
 }
-
 
 
 
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct PageInsertion {
-	#[serde(deserialize_with = "non_empty_str")]
-	pub author: Option<String>,
-
-	#[serde(deserialize_with = "non_empty_str")]
-	pub contact: Option<String>,
-
 	pub body: String,
-
+	pub author: Option<String>,
+	pub contact: Option<String>,
 	pub public: Option<bool>,
-
 	pub date: Option<DateTime<Utc>>,
 }
 
 impl PageInsertion {
+	fn trim_and_escape(input: &str, len: usize) -> String {
+		html_escape::encode_safe(&input.chars().take(len).collect::<String>()).to_string()
+	}
+
 	pub fn sanitize(&mut self) {
-		self.author = self.author.as_mut().map(|x| html_escape::encode_safe(&x.chars().take(AUTHOR_MAX_CHARS).collect::<String>()).to_string());
-		self.contact = self.contact.as_mut().map(|x| html_escape::encode_safe(&x.chars().take(CONTACT_MAX_CHARS).collect::<String>()).to_string());
-		self.body = html_escape::encode_safe(&self.body.chars().take(BODY_MAX_CHARS).collect::<String>()).to_string();
+		if let Some(author) = self.author.as_mut() {
+			*author = Self::trim_and_escape(author, AUTHOR_MAX_CHARS);
+		}
+		if self.author.is_some() && self.author.as_deref().unwrap().is_empty() {
+			self.author = None;
+		}
+		if let Some(contact) = self.contact.as_mut() {
+			*contact = Self::trim_and_escape(contact, CONTACT_MAX_CHARS);
+		}
+		if self.contact.is_some() && self.contact.as_deref().unwrap().is_empty() {
+			self.contact = None;
+		}
+		self.body = Self::trim_and_escape(&self.body, BODY_MAX_CHARS);
 	}
 
-	pub fn convert(mut self, overrides: &ConfigOverrides) -> Page {
-		self.sanitize();
-
-		let mut page = Page {
-			author: self.author.unwrap_or("".into()),
-			contact: self.contact,
-			body: self.body,
-			date: self.date.unwrap_or(Utc::now()),
-			public: self.public.unwrap_or(true),
-		};
-
-		if let Some(author) = &overrides.author {
-			page.author = author.to_string();
-		}
-		if let Some(public) = overrides.public {
-			page.public = public;
-		}
-		if let Some(date) = &overrides.date {
-			if date.to_lowercase() == "now" {
-				page.date = Utc::now();
-			} else {
-				page.date = DateTime::parse_from_rfc3339(date).unwrap().into();
-			}
-		}
-
-		page
+	pub fn overrides(&mut self, overrides: &ConfigOverrides) {
+		if let Some(public) = overrides.public { self.public = Some(public) };
+		if let Some(author) = &overrides.author { self.author = Some(author.clone()) };
+		if overrides.date { self.date = Some(Utc::now()) };
 	}
 }
 
-
-
-
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum Acknowledgement {
-	Sent(String),
-	Refused(String),
-}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PageOptions {
-	pub offset: Option<usize>,
-	pub limit: Option<usize>,
-}
-
-fn non_empty_str<'de, D: serde::Deserializer<'de>>(d: D) -> Result<Option<String>, D::Error> {
-	Ok(Option::deserialize(d)?.filter(|s: &String| !s.is_empty()))
+	pub offset: Option<i32>,
+	pub limit: Option<i32>,
 }

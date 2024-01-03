@@ -1,7 +1,7 @@
 use std::net::SocketAddr;
 use clap::{Parser, Subcommand};
 
-use crate::{storage::JsonFileStorageStrategy, routes::Context, notifications::console::ConsoleTracingNotifier, config::{Config, ConfigNotifierProvider}};
+use crate::{storage::StorageProvider, routes::Context, notifications::console::ConsoleTracingNotifier, config::{Config, ConfigNotifierProvider}};
 
 mod notifications;
 
@@ -20,7 +20,7 @@ struct CliArgs {
 	action: CliAction,
 
 	/// connection string of storage database
-	#[arg(long, default_value = "./storage.json")] // file://./guestbook.db
+	#[arg(long, default_value = "sqlite://./guestbook.db")]
 	db: String,
 
 	#[arg(long, default_value_t = false)]
@@ -53,9 +53,6 @@ async fn main() {
 		.with_max_level(if args.debug { tracing::Level::DEBUG } else { tracing::Level::INFO })
 		.init();
 
-	// TODO more (and better) storage solutions! sqlx to the rescue...
-	let storage = Box::new(JsonFileStorageStrategy::new(&args.db));
-
 	match args.action {
 		CliAction::Default => {
 			let mut cfg = Config::default();
@@ -75,16 +72,21 @@ async fn main() {
 				}
 			};
 
-			let mut state = Context::new(storage, config.overrides);
+			sqlx::any::install_default_drivers(); // must install all available drivers before connecting
+			let storage = StorageProvider::connect(&args.db, config.overrides).await.unwrap();
+
+			let mut state = Context::new(storage);
 
 			for notifier in config.notifiers.providers {
 				match notifier {
 					ConfigNotifierProvider::ConsoleNotifier => {
+						tracing::info!("registering console notifier");
 						state.register(Box::new(ConsoleTracingNotifier {}));
 					},
 
 					#[cfg(feature = "telegram")]
 					ConfigNotifierProvider::TelegramNotifier { token, chat_id } => {
+						tracing::info!("registering telegram notifier for chat {}", chat_id);
 						state.register(Box::new(
 							notifications::telegram::TGNotifier::new(&token, chat_id)
 						));
