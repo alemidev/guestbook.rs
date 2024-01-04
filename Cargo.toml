@@ -15,14 +15,13 @@ edition = "2021"
 # core
 tracing = "0.1"
 tracing-subscriber = "0.3"
-thiserror = "1"
+rand = "0.8"
 md-5 = "0.10"
 toml = "0.8"
-uuid = { version = "1.6", features = ["v4", "fast-rng"] }
 chrono = { version = "0.4", features = ["serde"] }
 serde = { version = "1", features = ["derive"] }
-serde_json = "1"
 serde-inline-default = "0.1" # TODO this hopefully won't be needed anymore soon
+serde_default = "0.1"
 async-trait = "0.1"
 html-escape = "0.2"
 clap = { version = "4.4", features = ["derive", "cargo"] }
@@ -37,7 +36,6 @@ tokio-rustls = { version = "0.25", optional = true }
 # frontend
 sailfish = { version = "0.8", optional = true }
 axum-extra = { version = "0.9", optional = true }
-serde_default = "0.1.0"
 
 [features]
 default = ["mysql", "sqlite", "postgres", "telegram", "email", "web"] # all features by default
