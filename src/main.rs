@@ -161,6 +161,8 @@ async fn launch() {
 
 fn main() {
 	tokio::runtime::Builder::new_current_thread()
+		.enable_time()
+		.enable_io()
 		.build().expect("could not create tokio runtime")
 		.block_on(async {
 			launch().await
