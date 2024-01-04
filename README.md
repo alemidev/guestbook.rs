@@ -1,7 +1,7 @@
 # guestbook.rs
 a super simple guestbook to deploy on your site: just grab the binary and run it, or configure it to your liking
 
-see it in action (with a custom frontend) [here, at the bottom](https://alemi.dev/), or try an in-memory temporary version [here](https://guestbook.alemi.dev/)
+try it out [here](https://guestbook.alemi.dev/) with a test instance _(db cleared every hour, default settings)_, or check out a more integrated deployment [here, at the bottom](https://alemi.dev/)
 
 # why
 i love small web and i want to give a way to whoever visits my site to leave a mark. cooking something to do that is very easy, but after connecting my third bare form i decided i needed something more convenient.
@@ -18,11 +18,11 @@ it will create a sqlite database (`guestbook.db`) in current directory and start
 all comments will be public and will only be logged on console
 
 ## simple configuration
-it's possible to configure frontend style, extra notifiers and page overrides with a `.toml` config file
+it's possible to configure frontend style, extra notifiers and page overrides using a `.toml` config file
 
-if no config file is provided, the implicit default will be used (view it with `guestbook config` or redirect it to file and start editing)
+if no config file is provided, the implicit default will be used (view it with `guestbook config` command)
 
-a custom config file can be specified with `-c / --config` CLI argument
+a config file must be specified with the `-c / --config` CLI argument
 
 ### overrides
 by default each user is given full control on each page (except for the `date` field). this can be changed with overrides.
@@ -35,7 +35,7 @@ add following section to your `config.toml`:
 public = false
 ```
 
-and each incoming page will be forced to be private (until you make it public manually with `guestbook review`)
+and each incoming page will be forced to be private (until you make it public manually, for example with `guestbook review`)
 
 ## modular configuration
 `guestbook.rs` just works, but can also be deeply customized
@@ -47,9 +47,9 @@ all notifiers are bundled, but just like db drivers it's possible to only includ
 the integrated frontend is not necessary, and can be excluded by disabling the `web` feature. serve your favorite page and just use the `/api` endpoint for fetching pages.
 
 ### making your own frontend
-the JS file used by the builtin frontend is available [here](https://cdn.alemi.dev/guestbook/0.3.0.js):
+the JS file used by the builtin frontend is available [here](https://cdn.alemi.dev/guestbook/0.3.1.js):
 ```
-https://cdn.alemi.dev/guestbook/0.3.0.js
+https://cdn.alemi.dev/guestbook/0.3.1.js
 ```
 
 this provides a plain JS (+jsdoc! check type hints) module exporting one function to hook the automatic infinite scroll fetcher
@@ -80,6 +80,7 @@ class GuestbookInsertion {
 
 # future work
 due to the modular structure of notifiers, i plan to add many more notifiers for various services, such as
+ * a cool picture or logo
  * matrix
  * mastodon/pleroma
  * discord
