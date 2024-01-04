@@ -58,8 +58,7 @@ enum CliAction {
 	},
 }
 
-#[tokio::main]
-async fn main() {
+async fn launch() {
 	let args = CliArgs::parse();
 
 	tracing_subscriber::fmt::fmt()
@@ -160,6 +159,14 @@ async fn main() {
 	}
 }
 
+fn main() {
+	tokio::runtime::Builder::new_current_thread()
+		.build().expect("could not create tokio runtime")
+		.block_on(async {
+			launch().await
+		});
+}
+
 // it drives me nuts that it doesn't do it by default!!! is there an option?
 fn if_using_sqlite_driver_and_file_is_missing_create_it_beforehand(uri: &str) {
 	use std::str::FromStr;
@@ -172,5 +179,4 @@ fn if_using_sqlite_driver_and_file_is_missing_create_it_beforehand(uri: &str) {
 			}
 		}
 	}
-
 }

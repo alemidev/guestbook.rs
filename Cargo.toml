@@ -26,7 +26,7 @@ serde-inline-default = "0.1" # TODO this hopefully won't be needed anymore soon
 async-trait = "0.1"
 html-escape = "0.2"
 clap = { version = "4.4", features = ["derive", "cargo"] }
-tokio = { version = "1.35", features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1.35" }
 axum = "0.7"
 # db providers
 sqlx = { version = "0.7", features = ["runtime-tokio", "tls-rustls", "any"] }
