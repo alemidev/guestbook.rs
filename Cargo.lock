@@ -906,7 +906,6 @@ dependencies = [
  "html-escape",
  "mail-send",
  "md-5",
- "rand",
  "sailfish",
  "serde",
  "serde-inline-default",

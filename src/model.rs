@@ -1,5 +1,4 @@
 use md5::{Md5, Digest};
-use rand::{distributions::Alphanumeric, Rng};
 use serde::{Serialize, Deserialize};
 use chrono::{DateTime, Utc};
 use sqlx::Row;
@@ -52,7 +51,7 @@ pub struct PageView {
 impl From<&Page> for PageView {
 	fn from(page: &Page) -> Self {
 		let mut hasher = Md5::new();
-		hasher.update(page.contact.as_deref().unwrap_or(&random_string(36)).as_bytes());
+		hasher.update(page.contact.as_deref().unwrap_or(&format!("{} - {}", page.body, page.timestamp)).as_bytes());
 		let avatar = format!("{:x}", hasher.finalize());
 
 		let url = match page.contact.as_deref() {
@@ -126,12 +125,4 @@ fn _non_empty_string(input: String) -> Option<String> {
 		true => None,
 		false => Some(input),
 	}
-}
-
-fn random_string(len: usize) -> String {
-	rand::thread_rng()
-		.sample_iter(&Alphanumeric)
-		.take(len)
-		.map(char::from)
-		.collect()
 }
