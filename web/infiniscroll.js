@@ -44,6 +44,7 @@ export default function hookInfiniteScroll(builder, opt) {
 
 	let container = document.getElementById(container_id);
 	let last_activation = Date.now();
+	let currently_fetching = false;
 	let offset = 0;
 
 	function scrollDepth() {
@@ -52,18 +53,23 @@ export default function hookInfiniteScroll(builder, opt) {
 	}
 
 	let callback = async (ev) => {
+		if (currently_fetching) return; // another callback is already active
 		if (ev !== true && scrollDepth() < threshold) return; // not scrolled enough
 		if (ev !== true && Date.now() - last_activation < debounce) return; // triggering too fast
-		last_activation = Date.now();
-		let response = await fetch(`${api_url}?${offset_arg}=${offset}`);
-		let replies = await response.json();
-		if (replies.length == 0) {
-			// reached end, unregister self
-			return document.removeEventListener("scroll", callback);
-		}
-		offset += free_index ? replies.length : 1; // track how deep we went
-		for (let repl of replies) {
-			container.innerHTML += builder(repl);
+		try {
+			currently_fetching = true;
+			let response = await fetch(`${api_url}?${offset_arg}=${offset}`);
+			let replies = await response.json();
+			if (replies.length == 0) { // reached end, unregister self
+				return document.removeEventListener("scroll", callback);
+			}
+			offset += free_index ? replies.length : 1; // track how deep we went
+			last_activation = Date.now();
+			for (let repl of replies) {
+				container.innerHTML += builder(repl);
+			}
+		} finally {
+			currently_fetching = false;
 		}
 	};
 
