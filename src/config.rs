@@ -55,6 +55,9 @@ pub struct ConfigTemplate {
 	#[serde_inline_default("you found my guestbook! please take a moment to sign it (:".into())]
 	pub description: String,
 
+	#[serde_inline_default("a simple guestbook to let visitors leave a mark".into())]
+	pub preview: String,
+
 	#[serde_inline_default("Kilroy was here  Ω".into())]
 	pub placeholder_body: String,
 
