@@ -47,9 +47,9 @@ all notifiers are bundled, but just like db drivers it's possible to only includ
 the integrated frontend is not necessary, and can be excluded by disabling the `web` feature. serve your favorite page and just use the `/api` endpoint for fetching pages.
 
 ### making your own frontend
-the JS file used by the builtin frontend is available [here](https://cdn.alemi.dev/guestbook/0.1.1.js):
+the JS file used by the builtin frontend is available from [here](https://cdn.alemi.dev/web/guestbook.js):
 ```
-https://cdn.alemi.dev/guestbook/0.1.1.js
+https://cdn.alemi.dev/web/guestbook.js
 ```
 
 this provides a plain JS (+jsdoc! check type hints) module exporting one function to hook the automatic infinite scroll fetcher
