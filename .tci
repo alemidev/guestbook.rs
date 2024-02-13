@@ -1,3 +1,4 @@
 #!/bin/bash
 
 cp ./web/infiniscroll.js /srv/http/cdn/web/guestbook.js
+echo "copied guestbook.js"
