@@ -141,7 +141,12 @@ async fn launch() {
 								&server, port, &username, &password, &from, &to, &subject
 							).await
 						));
+					}
 
+					#[cfg(feature = "ntfy")]
+					NotifierProvider::Ntfy { server, topic } => {
+						tracing::info!("registering ntfy provider on {}/{}", server, topic);
+						state.register(Box::new(notifications::ntfy::NtfyNotifier::new(server, topic)));
 					}
 				}
 			}

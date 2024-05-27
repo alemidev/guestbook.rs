@@ -32,12 +32,13 @@ sqlx = { version = "0.7", features = ["runtime-tokio", "tls-rustls", "any"] }
 teloxide = { version = "0.12", features = ["macros"], optional = true }
 mail-send = { version = "0.4", optional = true }
 tokio-rustls = { version = "0.25", optional = true }
+reqwest = { version = "0.12", optional = true }
 # frontend
 sailfish = { version = "0.8", optional = true }
 axum-extra = { version = "0.9", optional = true }
 
 [features]
-default = ["mysql", "sqlite", "postgres", "telegram", "email", "web"] # all features by default
+default = ["mysql", "sqlite", "postgres", "telegram", "email", "web", "ntfy"] # all features by default
 # db drivers
 mysql = ["sqlx/mysql"]
 sqlite = ["sqlx/sqlite"]
@@ -45,5 +46,6 @@ postgres = ["sqlx/postgres"]
 # notifier providers
 telegram = ["dep:teloxide"]
 email = ["dep:mail-send", "dep:tokio-rustls"]
+ntfy = ["dep:reqwest"]
 # frontend
 web = ["dep:sailfish", "dep:axum-extra"]

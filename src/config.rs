@@ -117,4 +117,10 @@ pub enum NotifierProvider {
 		to: String,
 		subject: String,
 	},
+
+	#[cfg(feature = "ntfy")]
+	Ntfy {
+		server: String,
+		topic: String,
+	}
 }
