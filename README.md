@@ -2,6 +2,7 @@
 [![Actions Status](https://github.com/alemidev/guestbook.rs/actions/workflows/test.yml/badge.svg?branch=dev)](https://github.com/alemidev/guestbook.rs/actions/workflows/test.yml)
 [![Actions Status](https://github.com/alemidev/guestbook.rs/actions/workflows/release.yml/badge.svg)](https://github.com/alemidev/guestbook.rs/actions/workflows/release.yml)
 [![GitHub last commit](https://img.shields.io/github/last-commit/alemidev/guestbook.rs)](https://github.com/alemidev/guestbook.rs/commits/dev/)
+
 a super simple guestbook to deploy on your site: just grab the binary and run it, or configure it to your liking
 
 try it out [here](https://guestbook.alemi.dev/) with a test instance _(db cleared every hour, default settings)_, or check out a more integrated deployment [here, at the bottom](https://alemi.dev/)
