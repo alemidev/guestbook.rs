@@ -1,35 +1,35 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title><%= root.title %></title>
-	<% if let Some(href) = &root.canonical { %><link rel="canonical" href="<%= href %>"><% } %>
+	<title><%= self.root.title %></title>
+	<% if let Some(href) = &self.root.canonical { %><link rel="canonical" href="<%= href %>"><% } %>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta property="og:type" content="website">
-	<meta property="og:title" content="<%= root.title %>">
-	<meta property="og:description" content="<%= root.preview %>">
+	<meta property="og:title" content="<%= self.root.title %>">
+	<meta property="og:description" content="<%= self.root.preview %>">
 	<style>
-	:root {
-		--bg-primary: <%= root.palette.bg_main %>;
-		--bg-secondary: <%= root.palette.bg_off %>;
-		--fg-primary: <%= root.palette.fg_main %>;
-		--fg-secondary: <%= root.palette.fg_off %>;
-		--accent: <%= root.palette.accent %>;
-		--accent-dark: <%= root.palette.accent_dark %>;
-		--accent-light: <%= root.palette.accent_light %>;
+	root {
+		--bg-primary: <%= self.root.palette.bg_main %>;
+		--bg-secondary: <%= self.root.palette.bg_off %>;
+		--fg-primary: <%= self.root.palette.fg_main %>;
+		--fg-secondary: <%= self.root.palette.fg_off %>;
+		--accent: <%= self.root.palette.accent %>;
+		--accent-dark: <%= self.root.palette.accent_dark %>;
+		--accent-light: <%= self.root.palette.accent_light %>;
 	}
 	</style>
 	<link rel="stylesheet" href="/style.css">
 </head>
 <body>
 	<div class="center">
-		<h1><%= root.title %></h1>
-		<img src="<%= root.logo %>" class="round-cover" title="guestbook cover">
-		<p><%- root.description %></p>
+		<h1><%= self.root.title %></h1>
+		<img src="<%= self.root.logo %>" class="round-cover" title="guestbook cover">
+		<p><%- self.root.description %></p>
 		<div>
 		<form action="/api" method="post">
 			<div class="full-width">
 				<!-- TODO can i get this textarea to be full width without weird magic percentages?? -->
-				<textarea class="input-fields" name="body" placeholder="<%= root.placeholder_body %>" title="main message body, html will be escaped" required></textarea>
+				<textarea class="input-fields" name="body" placeholder="<%= self.root.placeholder_body %>" title="main message body, html will be escaped" required></textarea>
 			</div>
 			<div class="full-width">
 				<input class="input-fields" type="text" name="author" maxlength="25" placeholder="your name" title="name to show next to your comment" required>
@@ -47,7 +47,7 @@
 				<td colspan="2"><hr></td>
 			</tr>
 		</table>
-		<p class="tiny" style="margin-top: 5em"><b>guestbook.rs</b> ~ <%- root.footer %></p>
+		<p class="tiny" style="margin-top: 5em"><b>guestbook.rs</b> ~ <%- self.root.footer %></p>
 	</div>
 	<script type="module" src="/infiniscroll.js"></script>
 	<script type="module" language="javascript">
